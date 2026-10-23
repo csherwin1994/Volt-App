@@ -261,6 +261,22 @@ select.sel { appearance: none; -webkit-appearance: none; height: 36px; padding: 
 .field label { font: 400 11px var(--mono); letter-spacing: 0.8px; text-transform: uppercase; color: var(--ink-2); }
 .input { height: 46px; border: 0; border-bottom: 1px solid var(--label); background: transparent; padding: 0; font-size: 17px; width: 100%; outline: none; color: var(--label); }
 .toast { position: absolute; left: 20px; right: 20px; top: 56px; background: var(--ink); color: var(--on-ink); padding: 12px 16px; font: 400 12px var(--mono); letter-spacing: 0.5px; text-transform: uppercase; z-index: 40; animation: fade .2s; }
+.gate { z-index: 50; overflow-y: auto; scrollbar-width: none; }
+.gate-in { padding: 36px 20px 32px; display: flex; flex-direction: column; min-height: 100%; }
+.gate .mk { display: flex; align-items: center; gap: 8px; }
+.gate .mk i { width: 8px; height: 8px; background: var(--accent); }
+.big { font-size: 56px; line-height: 54px; letter-spacing: -2.2px; margin: 0; font-weight: 400; }
+.fld { display: flex; flex-direction: column; gap: 6px; }
+.fld label { font: 400 11px var(--mono); letter-spacing: .8px; text-transform: uppercase; color: var(--ink-2); }
+.fld:focus-within label { color: var(--label); }
+.fld input { height: 44px; border: 0; background: transparent; font-size: 17px; outline: none; padding: 0; width: 100%; color: var(--label); }
+.fld input::placeholder { color: var(--ink-3); }
+.fld .ul { height: 1px; background: var(--label); } .fld:focus-within .ul { height: 2px; background: var(--accent); }
+.btn[disabled] { opacity: .4; cursor: default; }
+.or { display: flex; align-items: center; gap: 16px; margin: 24px 0; font: 400 11px var(--mono); letter-spacing: .9px; color: var(--ink-3); }
+.or i { flex: 1; height: 1px; background: var(--line); }
+.apple { background: var(--ink); color: var(--on-ink); }
+.skip { width: 100%; height: 56px; font: 500 11px var(--mono); letter-spacing: .9px; text-transform: uppercase; text-decoration: underline; text-underline-offset: 4px; }
 .sample { font: 400 10px var(--mono); letter-spacing: 0.6px; color: var(--ink-3); text-transform: uppercase; }
 </style>
 
@@ -273,6 +289,7 @@ select.sel { appearance: none; -webkit-appearance: none; height: 36px; padding: 
   <div id="exercise"></div>
   <div id="sheet"></div>
   <div id="dialog"></div>
+  <div id="gate"></div>
   <div id="toast"></div>
 </div>
 
@@ -362,16 +379,17 @@ function seed() {
     const last = history.filter(h => h.title === rt.name).at(-1);
     if (last) rt.items.forEach(it => { const lg = last.logs.find(l => l.ex === it.ex); if (lg) it.weight = lg.sets[0].w; });
   });
-  return { v: 2, name: 'Connor', unit: 'kg', appearance: 'auto', exercises, routines, history: history.reverse(), active: null, sample: true };
+  return { v: 2, name: 'Connor', unit: 'kg', appearance: 'auto', stage: 'login', seenWelcome: false, exercises, routines, history: history.reverse(), active: null, sample: true };
 }
 
 const KEY = 'volt-prototype-v2';
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || S.v !== 2) S = seed();
+if (!S.stage) { S.stage = 'login'; S.seenWelcome = false; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
-const U = { tab: 'train', libSeg: 'ex', libSearch: '', libMuscle: null, workoutOpen: false, exercise: null, sheet: null, dialog: null, rest: null, trendEx: null, menu: null, banner: null };
+const U = { gate: { mode: 'in', email: '', pw: '', pw2: '', err: '' }, tab: 'train', libSeg: 'ex', libSearch: '', libMuscle: null, workoutOpen: false, exercise: null, sheet: null, dialog: null, rest: null, trendEx: null, menu: null, banner: null };
 
 // ---------- Appearance (Light / Dark / Auto) ----------
 const hostTheme = document.documentElement.getAttribute('data-theme');
@@ -470,7 +488,7 @@ function isPR(ex, w, r, excludeId) {
 }
 
 // ---------- Render ----------
-function render() { applyAppearance(); renderScreen(); renderTabbar(); renderMini(); renderWorkout(); renderExercise(); renderSheet(); renderDialog(); }
+function render() { applyAppearance(); renderGate(); renderScreen(); renderTabbar(); renderMini(); renderWorkout(); renderExercise(); renderSheet(); renderDialog(); }
 
 function renderTabbar() {
   const tabs = [['train', 'Train'], ['history', 'History'], ['progress', 'Progress'], ['library', 'Library'], ['profile', 'Profile']];
@@ -613,7 +631,7 @@ function profileScreen() {
       <div class="r"><span class="main"><span class="t">Weight unit</span></span><div class="seg sm"><button class="${S.unit === 'kg' ? 'on' : ''}" data-act="unit" data-k="kg">KG</button><button class="${S.unit === 'lb' ? 'on' : ''}" data-act="unit" data-k="lb">LB</button></div></div>
     </div></section>
     <section class="sec"><span class="lbl">Prototype data</span><div style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn outline" data-act="clear">Start With No Data ${ic('arrow')}</button><button class="btn danger" data-act="reset">Reset Sample Data ${ic('arrow')}</button></div>
+      <button class="btn outline" data-act="clear">Start With No Data ${ic('arrow')}</button><button class="btn danger" data-act="reset">Reset Sample Data ${ic('arrow')}</button><button class="btn outline" data-act="show-login">Show Login and Welcome ${ic('arrow')}</button></div>
       <p class="lead" style="font-size:13px">This prototype saves to this browser only. In the app, workouts are stored on the phone and backed up to the cloud.</p></section>
   </div>`;
 }
@@ -727,6 +745,37 @@ function renderWorkout() {
   el.querySelector('.scroll').scrollTop = scroll;
 }
 
+
+// ---------- Login and welcome ----------
+const gateValid = () => { const g = U.gate; const ok = g.email.includes('@') && g.email.includes('.') && g.pw.length >= 6; return g.mode === 'up' ? ok && g.pw2 === g.pw : ok; };
+function renderGate() {
+  const el = $('gate'), g = U.gate;
+  if (S.stage === 'app') { el.innerHTML = ''; el.dataset.k = ''; return; }
+  const key = S.stage + g.mode;
+  if (el.dataset.k === key) return;
+  el.dataset.k = key;
+  const shell = inner => `<div class="layer gate"><div class="statusbar" aria-hidden="true"><span></span><span class="notch"></span><span></span></div><div class="gate-in">${inner}</div></div>`;
+  if (S.stage === 'welcome') {
+    const f = [['Track every lift', 'Log sets, reps and weight for more than 870 exercises.'], ['Know what to train', 'Each day Volt suggests a workout from what you have already done.'], ['See it move', 'Volume, streaks and personal records, week by week.']];
+    el.innerHTML = shell(`<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px"><div class="mk"><i></i><span class="lbl" style="font-weight:400">Volt</span></div><h1 class="big">Train with<br>precision.</h1></div>
+      <div class="rules" style="margin:32px 0">${f.map(([a, b], i) => `<div class="r" style="align-items:flex-start;padding:16px 0"><span class="n" style="color:var(--accent-text);padding-top:4px">${pad2(i + 1)}</span><span class="main"><span style="font-size:20px;letter-spacing:-.5px">${a}</span><span class="lead">${b}</span></span></div>`).join('')}</div>
+      <button class="btn primary" data-act="welcome-go">Get Started ${ic('arrow')}</button>`);
+    return;
+  }
+  const up = g.mode === 'up';
+  const field = (id, label, ph, type, val) => `<div class="fld"><label for="${id}">${label}</label><input id="${id}" data-input="${id}" type="${type}" placeholder="${ph}" value="${esc(val)}" autocomplete="off"><span class="ul"></span></div>`;
+  el.innerHTML = shell(`<div style="display:flex;flex-direction:column;gap:14px;margin:24px 0 32px"><div class="mk"><i></i><span class="lbl" style="font-weight:400">Volt · Performance, tracked</span></div><h1>${up ? 'Start training.' : 'Welcome back.'}</h1></div>
+    <div class="seg" role="tablist"><button class="${up ? '' : 'on'}" data-act="gate-mode" data-k="in">Sign in</button><button class="${up ? 'on' : ''}" data-act="gate-mode" data-k="up">Create account</button></div>
+    <div style="display:flex;flex-direction:column;gap:16px;margin-top:24px">${field('g-email', 'Email', 'you@example.com', 'email', g.email)}${field('g-pw', 'Password', 'At least 6 characters', 'password', g.pw)}${up ? field('g-pw2', 'Confirm password', 'Repeat password', 'password', g.pw2) : ''}</div>
+    <p class="cap" id="g-err" style="color:var(--danger);margin:16px 0 0" ${g.err ? '' : 'hidden'}>${esc(g.err)}</p>
+    <button class="btn primary" id="g-go" data-act="gate-go" style="margin-top:24px" ${gateValid() ? '' : 'disabled'}>${up ? 'Create Account' : 'Sign In'} ${ic('arrow')}</button>
+    <div class="or"><i></i>OR<i></i></div>
+    <button class="btn apple" data-act="gate-social">Sign in with Apple</button>
+    <button class="btn outline" data-act="gate-social" style="margin-top:8px">Sign in with Google ${ic('arrow')}</button>
+    <button class="skip" data-act="gate-skip" style="margin-top:8px">Continue without an account</button>`);
+}
+const afterGate = () => { U.gate = { mode: 'in', email: '', pw: '', pw2: '', err: '' }; S.stage = S.seenWelcome ? 'app' : 'welcome'; save(); render(); };
+
 // ---------- Sheets and dialogs ----------
 function openPicker(target) { U.sheet = { type: 'picker', target, q: '', m: null }; renderSheet(); setTimeout(() => $('pick-search')?.focus(), 50); }
 const sheetShell = (title, body) => `<div class="layer sheet-wrap" data-act="close-sheet-bg"><div class="sheet" role="dialog" aria-label="${esc(title || 'Sheet')}"><div class="sheet-hd"><span class="lbl">${esc(title)}</span><button class="icon-btn" data-act="close-sheet" aria-label="Close">${ic('x', 20)}</button></div><div class="sheet-body">${body}</div></div></div>`;
@@ -777,6 +826,12 @@ $('device').addEventListener('click', e => {
   const t = e.target.closest('[data-act]'); if (!t) return;
   const act = t.dataset.act, id = t.dataset.id, li = +t.dataset.li, si = +t.dataset.si, a = S.active;
   switch (act) {
+    case 'gate-mode': U.gate.mode = t.dataset.k; U.gate.err = ''; renderGate(); break;
+    case 'gate-go': if (gateValid()) afterGate(); break;
+    case 'gate-skip': afterGate(); break;
+    case 'gate-social': toast('Not available in the prototype'); break;
+    case 'welcome-go': S.seenWelcome = true; S.stage = 'app'; save(); render(); break;
+    case 'show-login': S.stage = 'login'; S.seenWelcome = false; U.workoutOpen = false; U.exercise = null; save(); render(); break;
     case 'tab': U.tab = t.dataset.k; U.exercise = null; render(); $('screen').scrollTop = 0; break;
     case 'appearance': S.appearance = t.dataset.k; save(); render(); break;
     case 'start': startWorkout(null); break;
@@ -853,6 +908,11 @@ $('device').addEventListener('click', e => {
 $('device').addEventListener('input', e => {
   const t = e.target, k = t.dataset.input; if (!k) return;
   const a = S.active;
+  if (k === 'g-email' || k === 'g-pw' || k === 'g-pw2') {
+    U.gate[{ 'g-email': 'email', 'g-pw': 'pw', 'g-pw2': 'pw2' }[k]] = t.value; U.gate.err = '';
+    const go = $('g-go'); if (go) go.disabled = !gateValid();
+    return;
+  }
   if (k === 'set-w') { const v = parseFloat(t.value.replace(',', '.')); a.logs[+t.dataset.li].sets[+t.dataset.si].w = isNaN(v) ? 0 : fromDisp(v); save(); }
   else if (k === 'set-r') { const v = parseInt(t.value, 10); a.logs[+t.dataset.li].sets[+t.dataset.si].r = isNaN(v) ? 0 : v; save(); }
   else if (k === 'w-title') { a.title = t.value; save(); }
