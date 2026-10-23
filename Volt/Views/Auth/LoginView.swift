@@ -25,61 +25,51 @@ struct LoginView: View {
             VoltColor.bg.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 0) {
-                    // Logo / brand header
-                    VStack(spacing: VoltSpacing.sm) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 24)
-                                .fill(VoltGradient.brand)
-                                .frame(width: 80, height: 80)
-                            Image(systemName: "bolt.fill")
-                                .font(VoltFont.sans(36, weight: .medium))
-                                .foregroundStyle(VoltColor.onInk)
+                VStack(alignment: .leading, spacing: 0) {
+                    // Wordmark: gold square, mono caption, one big headline
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 8) {
+                            Rectangle().fill(VoltColor.accent).frame(width: 8, height: 8)
+                            Text("VOLT · PERFORMANCE, TRACKED")
+                                .font(VoltFont.mono(11)).tracking(0.9)
+                                .foregroundStyle(VoltColor.labelSecondary)
                         }
-                        Text("Volt")
-                            .font(VoltFont.sans(34, weight: .regular))
+                        Text(mode == .signIn ? "Welcome back." : "Start training.")
+                            .font(VoltFont.sans(40)).tracking(-1.4)
                             .foregroundStyle(VoltColor.label)
-                        Text("Performance, tracked.")
-                            .font(.subheadline)
-                            .foregroundStyle(VoltColor.labelSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, VoltSpacing.xxl)
                     .padding(.bottom, VoltSpacing.xl)
 
-                    // Mode toggle
-                    HStack(spacing: 0) {
-                        modeTab("Sign In", selected: mode == .signIn) { withAnimation(.easeInOut(duration: 0.2)) { mode = .signIn; errorMessage = nil } }
-                        modeTab("Create Account", selected: mode == .signUp) { withAnimation(.easeInOut(duration: 0.2)) { mode = .signUp; errorMessage = nil } }
-                    }
-                    .background(VoltColor.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                    .padding(.horizontal, VoltSpacing.lg)
+                    VoltSegmented(
+                        options: [(value: Mode.signIn, label: "Sign in"), (value: Mode.signUp, label: "Create account")],
+                        selection: Binding(get: { mode }, set: { mode = $0; errorMessage = nil })
+                    )
                     .padding(.bottom, VoltSpacing.lg)
 
-                    // Fields
-                    VStack(spacing: VoltSpacing.sm) {
+                    // Fields: mono label over an ink underline
+                    VStack(spacing: VoltSpacing.md) {
                         inputField(
-                            icon: "envelope",
-                            placeholder: "Email address",
+                            label: "Email",
+                            placeholder: "you@example.com",
                             text: $email,
                             field: .email,
                             keyboard: .emailAddress,
                             contentType: .emailAddress
                         )
-
                         inputField(
-                            icon: "lock",
-                            placeholder: "Password",
+                            label: "Password",
+                            placeholder: "At least 6 characters",
                             text: $password,
                             field: .password,
                             isSecure: true,
                             contentType: mode == .signIn ? .password : .newPassword
                         )
-
                         if mode == .signUp {
                             inputField(
-                                icon: "lock.fill",
-                                placeholder: "Confirm password",
+                                label: "Confirm password",
+                                placeholder: "Repeat password",
                                 text: $confirmPassword,
                                 field: .confirmPassword,
                                 isSecure: true,
@@ -88,55 +78,42 @@ struct LoginView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                         }
                     }
-                    .padding(.horizontal, VoltSpacing.lg)
 
-                    // Error
                     if let error = errorMessage {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundStyle(VoltColor.danger)
-                            Text(error)
-                                .font(.subheadline)
-                                .foregroundStyle(VoltColor.danger)
-                        }
-                        .padding(.horizontal, VoltSpacing.lg)
-                        .padding(.top, VoltSpacing.sm)
-                        .transition(.opacity)
+                        Text(error)
+                            .font(VoltFont.mono(12)).tracking(0.3)
+                            .foregroundStyle(VoltColor.danger)
+                            .padding(.top, VoltSpacing.md)
+                            .transition(.opacity)
+                            .accessibilityAddTraits(.updatesFrequently)
                     }
 
-                    // CTA
                     VoltButton(
                         mode == .signIn ? "Sign In" : "Create Account",
-                        icon: mode == .signIn ? "arrow.right.circle.fill" : "person.badge.plus",
                         isLoading: isLoading
                     ) {
                         Task { await submit() }
                     }
-                    .padding(.horizontal, VoltSpacing.lg)
                     .padding(.top, VoltSpacing.lg)
                     .disabled(!isFormValid)
-                    .opacity(isFormValid ? 1 : 0.5)
+                    .opacity(isFormValid ? 1 : 0.4)
 
-                    // Sign in hint
                     if mode == .signUp {
                         Text("By creating an account you agree to our Terms of Service.")
-                            .font(.caption)
+                            .font(VoltFont.mono(11)).tracking(0.3)
                             .foregroundStyle(VoltColor.labelTertiary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, VoltSpacing.xl)
                             .padding(.top, VoltSpacing.md)
                     }
 
-                    // Social sign-in divider
-                    HStack(spacing: VoltSpacing.sm) {
-                        Rectangle().frame(height: 0.5).foregroundStyle(VoltColor.border)
-                        Text("or").font(.caption).foregroundStyle(VoltColor.labelTertiary)
-                        Rectangle().frame(height: 0.5).foregroundStyle(VoltColor.border)
+                    // Divider
+                    HStack(spacing: VoltSpacing.md) {
+                        VoltRule()
+                        Text("OR").font(VoltFont.mono(11)).tracking(0.9).foregroundStyle(VoltColor.labelTertiary)
+                        VoltRule()
                     }
-                    .padding(.horizontal, VoltSpacing.lg)
-                    .padding(.top, VoltSpacing.lg)
+                    .padding(.vertical, VoltSpacing.lg)
 
-                    // Sign in with Apple
+                    // Sign in with Apple (square, like every other control)
                     SignInWithAppleButton(.signIn, onRequest: { request in
                         let nonce = randomNonce()
                         currentNonce = nonce
@@ -146,41 +123,21 @@ struct LoginView: View {
                         Task { await handleAppleSignIn(result) }
                     })
                     .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-                    .frame(height: 52)
-                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                    .padding(.horizontal, VoltSpacing.lg)
-                    .padding(.top, VoltSpacing.sm)
+                    .frame(height: 56)
                     .disabled(isSocialLoading)
                     .opacity(isSocialLoading ? 0.6 : 1)
 
-                    // Sign in with Google
-                    Button {
+                    VoltButton("Sign in with Google", style: .secondary, isLoading: isSocialLoading) {
                         Task { await handleGoogleSignIn() }
-                    } label: {
-                        HStack(spacing: 10) {
-                            if isSocialLoading {
-                                ProgressView().tint(VoltColor.label)
-                            } else {
-                                Image(systemName: "globe")
-                                    .font(VoltFont.sans(18, weight: .regular))
-                                    .foregroundStyle(VoltColor.label)
-                                Text("Sign in with Google")
-                                    .font(VoltFont.sans(16, weight: .medium))
-                                    .foregroundStyle(VoltColor.label)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(VoltColor.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
                     }
-                    .padding(.horizontal, VoltSpacing.lg)
                     .padding(.top, VoltSpacing.sm)
                     .disabled(isSocialLoading)
 
                     Spacer(minLength: VoltSpacing.xxl)
                 }
+                .padding(.horizontal, VoltSpacing.gutter)
             }
+            .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
         }
         .animation(.easeInOut(duration: 0.2), value: mode)
@@ -189,20 +146,8 @@ struct LoginView: View {
 
     // MARK: - Subviews
 
-    private func modeTab(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(selected ? AnyShapeStyle(VoltGradient.brand) : AnyShapeStyle(Color.clear))
-                .foregroundStyle(selected ? VoltColor.onInk : VoltColor.labelSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius - 1))
-        }
-    }
-
     private func inputField(
-        icon: String,
+        label: String,
         placeholder: String,
         text: Binding<String>,
         field: Field,
@@ -210,37 +155,36 @@ struct LoginView: View {
         isSecure: Bool = false,
         contentType: UITextContentType? = nil
     ) -> some View {
-        HStack(spacing: VoltSpacing.sm) {
-            Image(systemName: icon)
-                .font(VoltFont.sans(16, weight: .regular))
-                .foregroundStyle(focusedField == field ? VoltColor.accent : VoltColor.labelTertiary)
-                .frame(width: 22)
+        let focused = focusedField == field
+        let prompt = Text(placeholder).foregroundStyle(VoltColor.labelTertiary)
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(VoltFont.mono(11)).tracking(0.8)
+                .foregroundStyle(focused ? VoltColor.label : VoltColor.labelSecondary)
 
-            if isSecure {
-                SecureField(placeholder, text: text)
-                    .textContentType(contentType)
-                    .focused($focusedField, equals: field)
-                    .font(.subheadline)
-                    .foregroundStyle(VoltColor.label)
-            } else {
-                TextField(placeholder, text: text)
-                    .keyboardType(keyboard)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(contentType)
-                    .focused($focusedField, equals: field)
-                    .font(.subheadline)
-                    .foregroundStyle(VoltColor.label)
+            Group {
+                if isSecure {
+                    SecureField("", text: text, prompt: prompt)
+                        .textContentType(contentType)
+                } else {
+                    TextField("", text: text, prompt: prompt)
+                        .keyboardType(keyboard)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textContentType(contentType)
+                }
             }
+            .focused($focusedField, equals: field)
+            .font(VoltFont.sans(17))
+            .foregroundStyle(VoltColor.label)
+            .frame(height: 44)
+            .accessibilityLabel(label)
+
+            Rectangle()
+                .fill(focused ? VoltColor.accent : VoltColor.label)
+                .frame(height: focused ? 2 : 1)
         }
-        .padding(VoltSpacing.md)
-        .background(VoltColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-        .overlay(
-            RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                .stroke(focusedField == field ? VoltColor.accent : VoltColor.border, lineWidth: focusedField == field ? 1 : 0.5)
-        )
-        .animation(.easeInOut(duration: 0.15), value: focusedField)
+        .animation(.easeInOut(duration: 0.15), value: focused)
     }
 
     // MARK: - Validation

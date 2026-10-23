@@ -54,17 +54,10 @@ struct RootView: View {
     private var splashScreen: some View {
         ZStack {
             VoltColor.bg.ignoresSafeArea()
-            VStack(spacing: VoltSpacing.md) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(VoltGradient.brand)
-                        .frame(width: 80, height: 80)
-                    Image(systemName: "bolt.fill")
-                        .font(VoltFont.sans(36, weight: .medium))
-                        .foregroundStyle(VoltColor.onInk)
-                }
+            HStack(spacing: 10) {
+                Rectangle().fill(VoltColor.accent).frame(width: 12, height: 12)
                 Text("Volt")
-                    .font(VoltFont.sans(34, weight: .regular))
+                    .font(VoltFont.sans(56)).tracking(-2.2)
                     .foregroundStyle(VoltColor.label)
             }
         }

@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Rule, large headline, one line of help, optional action. Same shape as the empty states on the canvas.
 struct EmptyStateView: View {
     let icon: String
     let title: String
@@ -8,41 +9,30 @@ struct EmptyStateView: View {
     var action: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: VoltSpacing.lg) {
-            ZStack {
-                Circle()
-                    .fill(VoltColor.surfaceHigh)
-                    .frame(width: 72, height: 72)
-                Image(systemName: icon)
-                    .font(VoltFont.sans(28, weight: .regular))
-                    .foregroundStyle(VoltColor.labelSecondary)
-            }
-
-            VStack(spacing: VoltSpacing.xs) {
-                Text(title)
-                    .font(VoltFont.sans(18, weight: .medium))
-                    .foregroundStyle(VoltColor.label)
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(VoltColor.labelSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-            }
-
+        VStack(alignment: .leading, spacing: 10) {
+            VoltRule(strong: true)
+            Text(title)
+                .font(VoltFont.sans(24)).tracking(-0.6)
+                .foregroundStyle(VoltColor.label)
+                .padding(.top, 14)
+            Text(message)
+                .font(VoltFont.sans(15)).lineSpacing(3)
+                .foregroundStyle(VoltColor.labelSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             if let actionTitle, let action {
-                VoltButton(actionTitle, action: action)
-                    .frame(maxWidth: 220)
+                VoltButton(actionTitle, style: .secondary, action: action)
+                    .padding(.top, 10)
             }
         }
-        .padding(VoltSpacing.xl)
-        .frame(maxWidth: .infinity)
+        .padding(VoltSpacing.gutter)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 #Preview {
     EmptyStateView(
         icon: "clock",
-        title: "No Workouts Yet",
+        title: "No workouts yet.",
         message: "Your completed workouts will appear here. Start your first session to begin tracking.",
         actionTitle: "Start Workout",
         action: {}
