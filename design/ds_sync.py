@@ -39,9 +39,9 @@ SPACING_USE = {
 }
 RADIUS_USE = {
     "radiusXs": "Weight and reps input fields.",
-    "radiusSm": "Small buttons (Start, Finish, rest timer buttons) and the set tick.",
-    "radius": "Cards, list groups and full-width buttons.",
-    "radiusLg": "Large cards and the floating workout bar.",
+    "radiusSm": "The set tick and other small square controls. Buttons are capsules, not this.",
+    "radius": "The set table, sheets and any surface that must be set apart.",
+    "radiusLg": "The floating rest timer.",
 }
 
 
