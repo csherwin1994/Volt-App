@@ -9,6 +9,7 @@ struct ProfileView: View {
     @Environment(SupabaseManager.self) private var supabase
     @AppStorage("username") private var username = "Athlete"
     @AppStorage("weightUnit") private var weightUnit = "kg"
+    @AppStorage("localMode") private var localMode = false
     @State private var showingSignOutConfirm = false
     @FocusState private var nameFocused: Bool
 
@@ -51,10 +52,15 @@ struct ProfileView: View {
                     .accessibilityHint("Opens History")
 
                     settingsSection
-                    backupSection
+                    if supabase.isSignedIn { backupSection }
                     aboutSection
 
-                    VoltButton("Sign Out", style: .danger) { showingSignOutConfirm = true }
+                    if supabase.isSignedIn {
+                        VoltButton("Sign Out", style: .danger) { showingSignOutConfirm = true }
+                    } else {
+                        // Local-only mode: workouts stay on this phone until you sign in
+                        VoltButton("Sign In for Cloud Backup", style: .secondary) { localMode = false }
+                    }
                 }
                 .padding(.horizontal, VoltSpacing.gutter)
                 .padding(.top, VoltSpacing.md)
@@ -65,7 +71,7 @@ struct ProfileView: View {
             .background(VoltColor.bg.ignoresSafeArea())
             .navigationBarHidden(true)
             .confirmationDialog("Sign Out?", isPresented: $showingSignOutConfirm, titleVisibility: .visible) {
-                Button("Sign Out", role: .destructive) { Task { await supabase.signOut() } }
+                Button("Sign Out", role: .destructive) { localMode = false; Task { await supabase.signOut() } }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Your data is saved locally and will be here when you sign back in.")

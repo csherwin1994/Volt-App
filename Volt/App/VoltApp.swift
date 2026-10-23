@@ -30,8 +30,18 @@ struct VoltApp: App {
 struct RootView: View {
     @Environment(SupabaseManager.self) private var supabase
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    /// Set by "Continue without an account" on the sign-in screen. Everything stays on this phone; only cloud backup needs an account.
+    @AppStorage("localMode") private var localMode = false
 
     var body: some View {
+        if localMode {
+            signedInContent
+        } else {
+            authGate
+        }
+    }
+
+    @ViewBuilder private var authGate: some View {
         switch supabase.authState {
         case .loading:
             splashScreen
@@ -41,13 +51,17 @@ struct RootView: View {
                 .transition(.opacity)
 
         case .signedIn:
-            if hasSeenWelcome {
-                ContentView()
-                    .transition(.opacity)
-            } else {
-                WelcomeView(hasSeenWelcome: $hasSeenWelcome)
-                    .transition(.opacity)
-            }
+            signedInContent
+        }
+    }
+
+    @ViewBuilder private var signedInContent: some View {
+        if hasSeenWelcome {
+            ContentView()
+                .transition(.opacity)
+        } else {
+            WelcomeView(hasSeenWelcome: $hasSeenWelcome)
+                .transition(.opacity)
         }
     }
 

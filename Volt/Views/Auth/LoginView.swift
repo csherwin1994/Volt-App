@@ -3,6 +3,7 @@ import AuthenticationServices
 
 struct LoginView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("localMode") private var localMode = false
     @State private var mode: Mode = .signIn
     @State private var email = ""
     @State private var password = ""
@@ -132,6 +133,18 @@ struct LoginView: View {
                     }
                     .padding(.top, VoltSpacing.sm)
                     .disabled(isSocialLoading)
+
+                    // No account: keep everything on this phone. Cloud backup can be added later from Profile.
+                    Button { localMode = true } label: {
+                        Text("CONTINUE WITHOUT AN ACCOUNT")
+                            .font(VoltFont.mono(11, weight: .medium)).tracking(0.9)
+                            .underline(true, color: VoltColor.label)
+                            .foregroundStyle(VoltColor.label)
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, VoltSpacing.sm)
 
                     Spacer(minLength: VoltSpacing.xxl)
                 }
