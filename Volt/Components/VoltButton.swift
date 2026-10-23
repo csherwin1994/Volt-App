@@ -2,7 +2,8 @@ import SwiftUI
 
 // MARK: - Primary Button
 struct VoltButton: View {
-    enum Style { case primary, secondary, ghost, danger }
+    /// primary: ink fill · gold: achievement (Finish) · secondary: 1px outline · ghost: text only · danger: red outline
+    enum Style { case primary, gold, secondary, ghost, danger }
 
     let title: String
     let icon: String?
@@ -26,55 +27,54 @@ struct VoltButton: View {
 
     var body: some View {
         Button(action: action) {
+            // Label on the left, arrow on the right: square buttons that point forward
             HStack(spacing: VoltSpacing.sm) {
+                if let icon { Image(systemName: icon).font(.system(size: 15, weight: .regular)) }
+                Text(title).font(VoltFont.sans(17))
+                Spacer(minLength: 12)
                 if isLoading {
-                    ProgressView()
-                        .tint(foregroundColor)
-                        .scaleEffect(0.85)
-                } else {
-                    if let icon { Image(systemName: icon).font(.system(size: 16, weight: .semibold)) }
-                    Text(title).font(.system(size: 16, weight: .semibold))
+                    // Fully qualified: the app's own ProgressView (the Progress tab) shadows SwiftUI's spinner
+                    SwiftUI.ProgressView().tint(foregroundColor).scaleEffect(0.85)
+                } else if style != .ghost {
+                    Image(systemName: "arrow.right").font(.system(size: 15, weight: .light))
                 }
             }
+            .padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(backgroundView)
+            .frame(height: 56)
+            .background(backgroundColor)
             .foregroundStyle(foregroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-            .overlay(
-                RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                    .stroke(borderColor, lineWidth: 0.5)
-            )
+            .overlay(Rectangle().strokeBorder(borderColor, lineWidth: 1))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .disabled(isLoading)
         .opacity(isLoading ? 0.7 : 1)
     }
 
-    @ViewBuilder
-    private var backgroundView: some View {
+    private var backgroundColor: Color {
         switch style {
-        case .primary:   VoltGradient.brand
-        case .secondary: VoltColor.surfaceHigh
-        case .ghost:     Color.clear
-        case .danger:    VoltColor.danger.opacity(0.15)
+        case .primary: VoltColor.ink
+        case .gold:    VoltColor.accent
+        default:       Color.clear
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary:   .white
+        case .primary:   VoltColor.onInk
+        case .gold:      VoltColor.onAccent
         case .secondary: VoltColor.label
-        case .ghost:     VoltColor.accent
+        case .ghost:     VoltColor.label
         case .danger:    VoltColor.danger
         }
     }
 
     private var borderColor: Color {
         switch style {
-        case .primary:   Color.clear
-        case .secondary: VoltColor.border
-        case .ghost:     Color.clear
-        case .danger:    VoltColor.danger.opacity(0.4)
+        case .secondary: VoltColor.label
+        case .danger:    VoltColor.danger
+        default:         Color.clear
         }
     }
 }
@@ -88,12 +88,12 @@ struct VoltIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 17, weight: .medium))
+                .font(VoltFont.sans(17, weight: .regular))
                 .foregroundStyle(tint)
                 .frame(width: 36, height: 36)
-                .background(VoltColor.surfaceHigh)
-                .clipShape(Circle())
+                .contentShape(Circle())
         }
+        .buttonStyle(.plain)
     }
 }
 

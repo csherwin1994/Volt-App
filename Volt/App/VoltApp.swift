@@ -4,12 +4,18 @@ import SwiftData
 @main
 struct VoltApp: App {
     @State private var supabase = SupabaseManager.shared
+    /// "system", "light" or "dark", set from the switch at the top of Train or in Profile.
+    @AppStorage("appearance") private var appearance = "system"
+
+    init() {
+        VoltFont.registerFonts()
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(supabase)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(AppearanceToggle.colorScheme(for: appearance))
         }
         .modelContainer(for: [
             WorkoutSession.self,
@@ -24,8 +30,18 @@ struct VoltApp: App {
 struct RootView: View {
     @Environment(SupabaseManager.self) private var supabase
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    /// Set by "Continue without an account" on the sign-in screen. Everything stays on this phone; only cloud backup needs an account.
+    @AppStorage("localMode") private var localMode = false
 
     var body: some View {
+        if localMode {
+            signedInContent
+        } else {
+            authGate
+        }
+    }
+
+    @ViewBuilder private var authGate: some View {
         switch supabase.authState {
         case .loading:
             splashScreen
@@ -35,30 +51,27 @@ struct RootView: View {
                 .transition(.opacity)
 
         case .signedIn:
-            if hasSeenWelcome {
-                ContentView()
-                    .transition(.opacity)
-            } else {
-                WelcomeView(hasSeenWelcome: $hasSeenWelcome)
-                    .transition(.opacity)
-            }
+            signedInContent
+        }
+    }
+
+    @ViewBuilder private var signedInContent: some View {
+        if hasSeenWelcome {
+            ContentView()
+                .transition(.opacity)
+        } else {
+            WelcomeView(hasSeenWelcome: $hasSeenWelcome)
+                .transition(.opacity)
         }
     }
 
     private var splashScreen: some View {
         ZStack {
             VoltColor.bg.ignoresSafeArea()
-            VStack(spacing: VoltSpacing.md) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(VoltGradient.brand)
-                        .frame(width: 80, height: 80)
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundStyle(.white)
-                }
+            HStack(spacing: 10) {
+                Rectangle().fill(VoltColor.accent).frame(width: 12, height: 12)
                 Text("Volt")
-                    .font(.system(size: 34, weight: .black))
+                    .font(VoltFont.sans(56)).tracking(-2.2)
                     .foregroundStyle(VoltColor.label)
             }
         }

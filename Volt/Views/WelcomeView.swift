@@ -1,114 +1,71 @@
 import SwiftUI
 
+// Shown once after the first sign-in. Same voice as the rest of the app: mono labels, hairline rules, one gold signal.
 struct WelcomeView: View {
     @Binding var hasSeenWelcome: Bool
 
-    private let features: [(icon: String, title: String, description: String)] = [
-        ("dumbbell.fill",         "Track Every Lift",       "Log sets, reps, and weight for any exercise in your library."),
-        ("repeat",                "Build Routines",          "Create structured templates and start workouts in seconds."),
-        ("chart.line.uptrend.xyaxis", "Analyze Progress",   "Visualize volume trends and personal records over time.")
+    private let features: [(title: String, description: String)] = [
+        ("Track every lift", "Log sets, reps and weight for more than 870 exercises."),
+        ("Know what to train", "Each day Volt suggests a workout from what you have already done."),
+        ("See it move", "Volume, streaks and personal records, week by week.")
     ]
 
     var body: some View {
         ZStack {
             VoltColor.bg.ignoresSafeArea()
 
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 Spacer()
 
-                // Logo
-                VStack(spacing: VoltSpacing.md) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(VoltGradient.brand)
-                            .frame(width: 96, height: 96)
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 44, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    VStack(spacing: 6) {
-                        Text("Welcome to Volt")
-                            .font(.system(size: 32, weight: .black))
-                            .foregroundStyle(VoltColor.label)
-                        Text("Your personal training companion")
-                            .font(.subheadline)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 8) {
+                        Rectangle().fill(VoltColor.accent).frame(width: 8, height: 8)
+                        Text("VOLT")
+                            .font(VoltFont.mono(11)).tracking(0.9)
                             .foregroundStyle(VoltColor.labelSecondary)
                     }
+                    Text("Train with\nprecision.")
+                        .font(VoltFont.sans(56)).tracking(-2.2)
+                        .foregroundStyle(VoltColor.label)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
 
-                // Feature highlights
-                VStack(spacing: 12) {
-                    ForEach(features, id: \.title) { feature in
-                        FeatureRow(icon: feature.icon, title: feature.title, description: feature.description)
+                VStack(spacing: 0) {
+                    VoltRule(strong: true)
+                    ForEach(Array(features.enumerated()), id: \.offset) { index, feature in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text(String(format: "%02d", index + 1))
+                                .font(VoltFont.mono(11)).foregroundStyle(VoltColor.accentText)
+                                .frame(width: 18, alignment: .leading)
+                                .padding(.top, 4)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(feature.title).font(VoltFont.sans(20)).tracking(-0.5).foregroundStyle(VoltColor.label)
+                                Text(feature.description)
+                                    .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 16)
+                        .accessibilityElement(children: .combine)
+                        VoltRule()
                     }
                 }
-                .padding(.horizontal, VoltSpacing.md)
 
                 Spacer()
 
-                // Get Started button
-                Button {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        hasSeenWelcome = true
-                    }
-                } label: {
-                    Text("Get Started")
-                        .font(.system(size: 17, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(VoltGradient.brand)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
+                VoltButton("Get Started") {
+                    withAnimation(.easeInOut(duration: 0.4)) { hasSeenWelcome = true }
                 }
-                .padding(.horizontal, VoltSpacing.md)
-                .padding(.bottom, VoltSpacing.xxl)
+                .padding(.bottom, VoltSpacing.xl)
             }
+            .padding(.horizontal, VoltSpacing.gutter)
         }
-    }
-}
-
-private struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(spacing: VoltSpacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(VoltColor.accent.opacity(0.12))
-                    .frame(width: 48, height: 48)
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(VoltColor.accent)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(VoltColor.label)
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(VoltColor.labelSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer()
-        }
-        .padding(VoltSpacing.md)
-        .background(VoltColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-        .overlay(
-            RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                .stroke(VoltColor.border, lineWidth: 0.5)
-        )
     }
 }
 
 #Preview("Welcome") {
     WelcomeView(hasSeenWelcome: .constant(false))
-        .preferredColorScheme(.dark)
 }

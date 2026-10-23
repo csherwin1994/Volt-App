@@ -1,52 +1,73 @@
 import SwiftUI
 import SwiftData
 
+// Library tab, Routines side. Same header and rule list as Library.dc.html.
 struct RoutinesView: View {
     @Query(sort: \Routine.createdAt, order: .reverse) private var routines: [Routine]
+    @Query private var exercises: [Exercise]
     @Environment(\.modelContext) private var modelContext
     @State private var showingCreate = false
+    @State private var routineToDelete: Routine?
+    /// Set when shown inside the Library tab, which adds the Exercises / Routines switch.
+    var librarySection: Binding<LibraryView.Section>? = nil
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                VoltColor.bg.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VoltScreenHeader(
+                            caption: "\(exercises.count) exercises · \(routines.count) routines",
+                            title: librarySection == nil ? "Routines" : "Library"
+                        ) {
+                            VoltTextLink("New") { showingCreate = true }
+                                .accessibilityLabel("New routine")
+                        }
+                        if let librarySection { LibrarySectionPicker(selection: librarySection) }
+                    }
+                    .padding(.bottom, 20)
 
-                if routines.isEmpty {
-                    EmptyStateView(
-                        icon: "repeat",
-                        title: "No Routines Yet",
-                        message: "Create routines to quickly start structured workouts without planning each time.",
-                        actionTitle: "Create Routine",
-                        action: { showingCreate = true }
-                    )
-                } else {
-                    List {
-                        ForEach(routines) { routine in
-                            NavigationLink { RoutineDetailView(routine: routine) } label: {
-                                RoutineRow(routine: routine)
-                            }
-                            .listRowBackground(VoltColor.surface)
-                            .listRowSeparatorTint(VoltColor.border)
-                            .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                    VoltRule(strong: true)
+                    if routines.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("No routines yet.").font(VoltFont.sans(24)).tracking(-0.6).foregroundStyle(VoltColor.label)
+                            Text("Save a workout plan and start it with one tap next time.")
+                                .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                            VoltButton("Create Routine", style: .secondary) { showingCreate = true }
+                                .padding(.top, 10)
                         }
-                        .onDelete { offsets in
-                            offsets.forEach { modelContext.delete(routines[$0]) }
-                            try? modelContext.save()
-                        }
+                        .padding(.vertical, 24)
                     }
-                    .scrollContentBackground(.hidden)
-                    .listStyle(.insetGrouped)
-                }
-            }
-            .navigationTitle("Routines")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { showingCreate = true } label: {
-                        Image(systemName: "plus").foregroundStyle(VoltColor.accent)
+                    ForEach(routines) { routine in
+                        NavigationLink { RoutineDetailView(routine: routine) } label: {
+                            RoutineRow(routine: routine)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("Delete Routine", role: .destructive) { routineToDelete = routine }
+                        }
+                        VoltRule()
                     }
                 }
+                .padding(.horizontal, VoltSpacing.gutter)
+                .padding(.top, VoltSpacing.md)
+                .padding(.bottom, VoltSpacing.xxl)
             }
+            .scrollIndicators(.hidden)
+            .background(VoltColor.bg.ignoresSafeArea())
+            .navigationBarHidden(true)
             .sheet(isPresented: $showingCreate) { CreateRoutineView() }
+            .confirmationDialog("Delete routine?", isPresented: Binding(
+                get: { routineToDelete != nil }, set: { if !$0 { routineToDelete = nil } }
+            ), titleVisibility: .visible) {
+                Button("Delete", role: .destructive) {
+                    if let routine = routineToDelete { modelContext.delete(routine); try? modelContext.save() }
+                    routineToDelete = nil
+                }
+                Button("Cancel", role: .cancel) { routineToDelete = nil }
+            } message: {
+                Text("Past workouts are kept.")
+            }
         }
     }
 }
@@ -54,39 +75,35 @@ struct RoutinesView: View {
 struct RoutineRow: View {
     let routine: Routine
 
-    private var muscles: [Exercise.MuscleGroup] {
-        Array(Set(routine.exercises.map(\.exerciseMuscleGroup)))
-            .compactMap { Exercise.MuscleGroup(rawValue: $0) }
-            .prefix(3)
-            .map { $0 }
+    private var summary: String {
+        let names = routine.exercises.sorted { $0.orderIndex < $1.orderIndex }.map(\.exerciseName)
+        return names.isEmpty ? "No exercises yet" : names.prefix(3).joined(separator: " · ")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(routine.name)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(VoltColor.label)
-                Spacer()
-                Text("\(routine.exerciseCount) ex")
-                    .font(.caption.weight(.medium))
+                    .font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+                    .lineLimit(1)
+                Text(summary.uppercased())
+                    .font(VoltFont.mono(11)).tracking(0.4)
                     .foregroundStyle(VoltColor.labelSecondary)
+                    .lineLimit(1)
             }
-            if !muscles.isEmpty {
-                HStack(spacing: 5) { ForEach(muscles, id: \.self) { MuscleBadge(group: $0) } }
-            }
-            if let last = routine.lastUsedAt {
-                Text("Last used \(last.formatted(.relative(presentation: .named)))")
-                    .font(.caption)
-                    .foregroundStyle(VoltColor.labelTertiary)
-            }
+            Spacer(minLength: 8)
+            Image(systemName: "arrow.right").font(.system(size: 14)).foregroundStyle(VoltColor.labelTertiary)
         }
+        .padding(.vertical, 13)
+        .contentShape(Rectangle())
     }
 }
 
 struct RoutineDetailView: View {
     @Bindable var routine: Routine
     @Environment(\.modelContext) private var modelContext
+    @State private var editMode: EditMode = .inactive
+    @Query private var library: [Exercise]
     @State private var showingExercisePicker = false
 
     private var sortedExercises: [RoutineExercise] {
@@ -94,58 +111,71 @@ struct RoutineDetailView: View {
     }
 
     var body: some View {
-        ZStack {
-            VoltColor.bg.ignoresSafeArea()
-            List {
-                Section("Exercises") {
-                    ForEach(sortedExercises) { ex in
-                        RoutineExerciseRow(exercise: ex)
-                            .listRowBackground(VoltColor.surface)
-                            .listRowSeparatorTint(VoltColor.border)
-                    }
-                    .onDelete { offsets in
-                        let sorted = sortedExercises
-                        offsets.forEach { idx in
-                            let ex = sorted[idx]
-                            routine.exercises.removeAll { $0.id == ex.id }
-                            modelContext.delete(ex)
-                        }
-                        try? modelContext.save()
-                    }
-                    .onMove { from, to in
-                        var sorted = sortedExercises
-                        sorted.move(fromOffsets: from, toOffset: to)
-                        for (i, ex) in sorted.enumerated() { ex.orderIndex = i }
-                        try? modelContext.save()
-                    }
-
-                    Button {
-                        showingExercisePicker = true
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "plus.circle.fill").foregroundStyle(VoltColor.accent)
-                            Text("Add Exercise").foregroundStyle(VoltColor.accent)
-                                .font(.subheadline.weight(.medium))
-                        }
-                    }
-                    .listRowBackground(VoltColor.surface)
-                }
-
+        List {
+            VStack(alignment: .leading, spacing: 10) {
+                VoltSectionTitle("Routine · \(routine.exerciseCount) exercises")
+                Text(routine.name)
+                    .font(VoltFont.sans(40)).tracking(-1.4)
+                    .foregroundStyle(VoltColor.label)
                 if !routine.notes.isEmpty {
-                    Section("Notes") {
-                        Text(routine.notes)
-                            .font(.subheadline)
-                            .foregroundStyle(VoltColor.labelSecondary)
-                            .listRowBackground(VoltColor.surface)
+                    Text(routine.notes).font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                }
+                VoltRule(strong: true).padding(.top, 10)
+            }
+            .listRowInsets(EdgeInsets(top: 8, leading: VoltSpacing.gutter, bottom: 0, trailing: VoltSpacing.gutter))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+            ForEach(Array(sortedExercises.enumerated()), id: \.element.id) { index, ex in
+                Group {
+                    if let exercise = library.first(where: { $0.name == ex.exerciseName }) {
+                        NavigationLink { ExerciseDetailView(exercise: exercise) } label: {
+                            RoutineExerciseRow(index: index, exercise: ex)
+                        }
+                    } else {
+                        RoutineExerciseRow(index: index, exercise: ex)
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 0, leading: VoltSpacing.gutter, bottom: 0, trailing: VoltSpacing.gutter))
+                .listRowBackground(Color.clear)
+                .listRowSeparatorTint(VoltColor.border)
+                .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
             }
-            .scrollContentBackground(.hidden)
-            .listStyle(.insetGrouped)
+            .onDelete { offsets in
+                let sorted = sortedExercises
+                offsets.forEach { idx in
+                    let ex = sorted[idx]
+                    routine.exercises.removeAll { $0.id == ex.id }
+                    modelContext.delete(ex)
+                }
+                try? modelContext.save()
+            }
+            .onMove { from, to in
+                var sorted = sortedExercises
+                sorted.move(fromOffsets: from, toOffset: to)
+                for (i, ex) in sorted.enumerated() { ex.orderIndex = i }
+                try? modelContext.save()
+            }
+
+            VoltButton("Add Exercise", icon: nil, style: .secondary) { showingExercisePicker = true }
+                .listRowInsets(EdgeInsets(top: 20, leading: VoltSpacing.gutter, bottom: 20, trailing: VoltSpacing.gutter))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         }
-        .navigationTitle(routine.name)
+        .listStyle(.plain)
+        .environment(\.editMode, $editMode)
+        .scrollContentBackground(.hidden)
+        .background(VoltColor.bg.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .primaryAction) { EditButton().foregroundStyle(VoltColor.accent) } }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(editMode.isEditing ? "DONE" : "REORDER") {
+                    withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+                }
+                .font(VoltFont.mono(11, weight: .medium))
+                .foregroundStyle(VoltColor.label)
+            }
+        }
         .sheet(isPresented: $showingExercisePicker) {
             ExercisePickerSheet { exercise in
                 let re = RoutineExercise(
@@ -162,26 +192,30 @@ struct RoutineDetailView: View {
 }
 
 struct RoutineExerciseRow: View {
+    let index: Int
     @Bindable var exercise: RoutineExercise
     @AppStorage("weightUnit") private var weightUnit = "kg"
 
+    private var target: String {
+        let base = "\(exercise.targetSets) × \(exercise.targetReps)"
+        return exercise.targetWeight > 0 ? "\(base) · \(voltWeight(exercise.targetWeight)) \(weightUnit)" : base
+    }
+
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
+            Text(String(format: "%02d", index + 1))
+                .font(VoltFont.mono(11)).foregroundStyle(VoltColor.labelTertiary)
+                .frame(width: 18, alignment: .leading)
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.exerciseName)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(VoltColor.label)
-                Text("\(exercise.targetSets) × \(exercise.targetReps) reps")
-                    .font(.caption)
+                    .font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+                Text(target.uppercased())
+                    .font(VoltFont.mono(11)).tracking(0.4)
                     .foregroundStyle(VoltColor.labelSecondary)
             }
-            Spacer()
-            if exercise.targetWeight > 0 {
-                Text(String(format: "%.0f \(weightUnit)", exercise.targetWeight))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(VoltColor.accent)
-            }
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 13)
     }
 }
 

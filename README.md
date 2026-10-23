@@ -61,6 +61,61 @@ Volt/
 > **Note:** To run on a real device you need a free Apple Developer account.
 > Go to **Xcode → Signing & Capabilities**, set your Team, and the bundle ID `com.sherwinlabs.Volt` is already configured.
 
+## Design
+
+Volt's look is **Nordic Precision**, drawn from Scandinavian design leaders: Polestar's single typeface and huge, tightly set numerals, Teenage Engineering's monospaced labels and spec-sheet grids, and Oura's calm, warm data.
+
+- **Palette:** paper and graphite, with one signal colour, *Performance Gold*, which means achievement (a done set, Finish, a PR, a trained day). Photos are shown in greyscale.
+- **Type:** [Schibsted Grotesk](https://github.com/schibsted/schibsted-grotesk) for words and numerals, [Geist Mono](https://github.com/vercel/geist-font) for data and labels. Both are SIL Open Font License fonts bundled in `Volt/Resources/Fonts` and registered at launch.
+- **Shape:** square corners, 1px hairline rules, buttons with the label on the left and an arrow on the right.
+- **Appearance:** Light, Dark or Auto, switched at the top of Train or in Profile.
+- **Exercise page:** every exercise uses one interactive template: a movement demo crossfading at tempo, today's target with a plate calculator, a muscle map, step-through form cues and your records.
+
+All colours live in `design/tokens.json` and are generated into `Volt/Theme/AppTheme.swift`; see `CLAUDE.md` for the design workflow.
+
+An interactive web prototype is in `prototype/volt-prototype.html` (it uses the current colours but the earlier layout).
+
+## Exercise library
+
+Volt ships with about 950 exercises: its own built-in list plus the 876 exercises of
+[free-exercise-db](https://github.com/yuhonas/free-exercise-db), which is in the public domain.
+Each catalog exercise has its primary and secondary muscles, equipment, level, step-by-step instructions
+and photos (loaded from the free-exercise-db repository on GitHub when you open an exercise).
+Built-in exercises that match a catalog entry keep their short name and gain its details.
+
+The catalog is bundled as `Volt/Resources/exercises.json`. To rebuild it from a newer copy of the database:
+
+```
+git clone --depth 1 https://github.com/yuhonas/free-exercise-db /tmp/free-exercise-db
+python3 tools/build_exercise_catalog.py /tmp/free-exercise-db/dist/exercises.json
+```
+
+Then bump `ExerciseCatalog.version` in `Volt/Persistence/DataManager.swift` so existing installs import the new entries.
+
+## Exercise animations
+
+Exercises are demonstrated by a line-drawn figure in the app's own style rather than stock photos: graphite strokes, the main working muscle in gold, and the bar path traced as a dashed gold line. 43 movement patterns cover all built-in exercises and about three quarters of the 870-exercise catalog (stretches and plyometrics still show photos). The exercise page has play/pause, slow motion and a rep counter; the live workout has a Demo toggle on every exercise card. See `design/movements.json` and CLAUDE.md for how to add or tune a movement.
+
+## Personal records
+
+When you tick a set that beats your previous best for that exercise, Volt shows a "New PR" banner and a trophy on the set.
+A set counts as a record when it is heavier than any earlier set, or when its estimated 1-rep max (Epley formula) is higher.
+Records also show in workout history and on each exercise's detail page (Library → exercise).
+
+## Rest timer Live Activity
+
+After you complete a set, the rest countdown appears on the Lock Screen and in the Dynamic Island, so you don't have to unlock your phone between sets.
+The app side is already set up (`Volt/LiveActivity/`, and `NSSupportsLiveActivities` is on). The widget extension has to be added once in Xcode:
+
+1. In Xcode choose **File → New → Target…**, pick **Widget Extension**, and name it `VoltRestTimerWidget`.
+   Tick **Include Live Activity**, untick **Include Configuration App Intent**, and click **Activate** if asked.
+2. Delete the Swift files Xcode generated inside the new `VoltRestTimerWidget` group (keep `Info.plist` and `Assets.xcassets`).
+3. Drag `VoltRestTimerWidgetBundle.swift` and `RestTimerLiveActivityWidget.swift` from the repo's `VoltRestTimerWidget/` folder into that group, with only the **VoltRestTimerWidget** target ticked.
+4. Select `Volt/LiveActivity/RestTimerAttributes.swift`, open the File inspector, and under **Target Membership** tick **VoltRestTimerWidget** as well as **Volt**.
+5. Set the widget target's **Minimum Deployments** to iOS 17.0, then build and run the **Volt** scheme.
+
+Without these steps the app still builds and the in-app rest timer works; only the Lock Screen countdown is missing.
+
 ## Architecture
 
 - **MVVM** — Views observe `ActiveWorkoutViewModel` via `@Observable`
@@ -72,7 +127,8 @@ Volt/
 - [ ] Login / auth screens + cloud backup (Supabase)
 - [ ] Profile photo support
 - [ ] Strava integration
-- [ ] Personal records (PR) detection and badges during workouts
+- [x] Personal records (PR) detection and badges during workouts
+- [x] Rest timer Live Activity (Lock Screen and Dynamic Island)
 - [ ] Apple Health sync
 - [ ] Apple Watch companion app
 - [ ] Plate calculator

@@ -5,36 +5,54 @@ struct ContentView: View {
     @State private var selectedTab: Tab = .workout
     @Environment(\.modelContext) private var modelContext
 
-    enum Tab { case workout, history, progress, exercises, routines, profile }
+    enum Tab { case workout, history, progress, library, profile }
+
+    private let tabs: [(tab: Tab, label: String)] = [
+        (.workout, "Train"), (.history, "History"), (.progress, "Progress"), (.library, "Library"), (.profile, "Profile")
+    ]
 
     var body: some View {
+        // The system tab bar is hidden; VoltTabBar draws the text-only mono bar from the canvas.
         TabView(selection: $selectedTab) {
-            WorkoutTabView()
-                .tabItem { Label("Workout", systemImage: "dumbbell.fill") }
-                .tag(Tab.workout)
-
-            HistoryView()
-                .tabItem { Label("History", systemImage: "clock.fill") }
-                .tag(Tab.history)
-
-            ProgressView()
-                .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
-                .tag(Tab.progress)
-
-            ExerciseLibraryView()
-                .tabItem { Label("Exercises", systemImage: "list.bullet") }
-                .tag(Tab.exercises)
-
-            RoutinesView()
-                .tabItem { Label("Routines", systemImage: "repeat") }
-                .tag(Tab.routines)
-
-            ProfileView(selectedTab: $selectedTab)
-                .tabItem { Label("Profile", systemImage: "person.fill") }
-                .tag(Tab.profile)
+            WorkoutTabView().tag(Tab.workout).toolbar(.hidden, for: .tabBar)
+            HistoryView().tag(Tab.history).toolbar(.hidden, for: .tabBar)
+            ProgressView().tag(Tab.progress).toolbar(.hidden, for: .tabBar)
+            LibraryView().tag(Tab.library).toolbar(.hidden, for: .tabBar)
+            ProfileView(selectedTab: $selectedTab).tag(Tab.profile).toolbar(.hidden, for: .tabBar)
         }
-        .tint(VoltColor.accent)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VoltTabBar(tabs: tabs, selection: $selectedTab)
+        }
+        .tint(VoltColor.ink)
         .onAppear { DataManager.seedExercisesIfNeeded(context: modelContext) }
+    }
+}
+
+// MARK: - Library (Exercises + Routines in one tab)
+
+struct LibraryView: View {
+    enum Section: String, CaseIterable, Identifiable {
+        case exercises = "Exercises"
+        case routines = "Routines"
+        var id: String { rawValue }
+    }
+
+    @State private var section: Section = .exercises
+
+    var body: some View {
+        switch section {
+        case .exercises: ExerciseLibraryView(librarySection: $section)
+        case .routines:  RoutinesView(librarySection: $section)
+        }
+    }
+}
+
+/// Segmented control shown at the top of both Library screens.
+struct LibrarySectionPicker: View {
+    @Binding var selection: LibraryView.Section
+
+    var body: some View {
+        VoltSegmented(options: LibraryView.Section.allCases.map { (value: $0, label: $0.rawValue) }, selection: $selection)
     }
 }
 
@@ -42,5 +60,4 @@ struct ContentView: View {
     ContentView()
         .modelContainer(for: [WorkoutSession.self, Exercise.self, Routine.self], inMemory: true)
         .environment(SupabaseManager.shared)
-        .preferredColorScheme(.dark)
 }

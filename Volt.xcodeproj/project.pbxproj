@@ -14,6 +14,8 @@
 		B00000005 /* Routine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000005 /* Routine.swift */; };
 		B00000006 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000006 /* DataManager.swift */; };
 		B00000007 /* ActiveWorkoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000007 /* ActiveWorkoutViewModel.swift */; };
+		BLA0000001 /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ALA0000001 /* RestTimerAttributes.swift */; };
+		BLA0000002 /* RestTimerLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = ALA0000002 /* RestTimerLiveActivity.swift */; };
 		B00000008 /* WorkoutTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000008 /* WorkoutTabView.swift */; };
 		B00000009 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000009 /* ActiveWorkoutView.swift */; };
 		B0000000A /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000A /* HistoryView.swift */; };
@@ -23,11 +25,16 @@
 		B0000000F /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000F /* AppTheme.swift */; };
 		B00000010 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000010 /* ProgressView.swift */; };
 		B00000011 /* VoltButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000011 /* VoltButton.swift */; };
+		BMOV000001 /* MovementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AMOV000001 /* MovementView.swift */; };
 		B00000012 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000012 /* EmptyStateView.swift */; };
 		B00000020 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000020 /* LoginView.swift */; };
 		B00000015 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000015 /* SupabaseManager.swift */; };
 		B00000021 /* WorkoutRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000021 /* WorkoutRecommendationEngine.swift */; };
 		B00000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000016 /* Assets.xcassets */; };
+		BRES000001 /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = ARES000001 /* exercises.json */; };
+		BRES000002 /* SchibstedGrotesk.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ARES000002 /* SchibstedGrotesk.ttf */; };
+		BRES000003 /* GeistMono.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ARES000003 /* GeistMono.ttf */; };
+		BRES000004 /* movements.json in Resources */ = {isa = PBXBuildFile; fileRef = ARES000004 /* movements.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +45,8 @@
 		A00000005 /* Routine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routine.swift; sourceTree = "<group>"; };
 		A00000006 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
 		A00000007 /* ActiveWorkoutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutViewModel.swift; sourceTree = "<group>"; };
+		ALA0000001 /* RestTimerAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerAttributes.swift; sourceTree = "<group>"; };
+		ALA0000002 /* RestTimerLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivity.swift; sourceTree = "<group>"; };
 		A00000008 /* WorkoutTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTabView.swift; sourceTree = "<group>"; };
 		A00000009 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
 		A0000000A /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -47,11 +56,16 @@
 		A0000000F /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		A00000010 /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
 		A00000011 /* VoltButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoltButton.swift; sourceTree = "<group>"; };
+		AMOV000001 /* MovementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovementView.swift; sourceTree = "<group>"; };
 		A00000012 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		A00000015 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
 		A00000021 /* WorkoutRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRecommendationEngine.swift; sourceTree = "<group>"; };
 		A00000020 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A00000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ARES000001 /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
+		ARES000002 /* SchibstedGrotesk.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/SchibstedGrotesk.ttf; sourceTree = "<group>"; };
+		ARES000003 /* GeistMono.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/GeistMono.ttf; sourceTree = "<group>"; };
+		ARES000004 /* movements.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = movements.json; sourceTree = "<group>"; };
 		PROD000001 /* Volt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Volt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -72,11 +86,13 @@
 				GRPAPP00001 /* App */,
 				GRPMDL00001 /* Models */,
 				GRPVWM00001 /* ViewModels */,
+				GRPLIVE0001 /* LiveActivity */,
 				GRPVWS00001 /* Views */,
 				GRPPER00001 /* Persistence */,
 				GRPTHM00001 /* Theme */,
 				GRPCMP00001 /* Components */,
 				GRPSVC00001 /* Services */,
+				GRPRES0001 /* Resources */,
 				A00000016 /* Assets.xcassets */,
 			);
 			path = Volt;
@@ -86,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000011 /* VoltButton.swift */,
+				AMOV000001 /* MovementView.swift */,
 				A00000012 /* EmptyStateView.swift */,
 			);
 			path = Components;
@@ -117,6 +134,26 @@
 				A00000005 /* Routine.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		GRPRES0001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				ARES000001 /* exercises.json */,
+				ARES000002 /* SchibstedGrotesk.ttf */,
+				ARES000003 /* GeistMono.ttf */,
+				ARES000004 /* movements.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		GRPLIVE0001 /* LiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				ALA0000001 /* RestTimerAttributes.swift */,
+				ALA0000002 /* RestTimerLiveActivity.swift */,
+			);
+			path = LiveActivity;
 			sourceTree = "<group>";
 		};
 		GRPVWM00001 /* ViewModels */ = {
@@ -289,6 +326,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000016 /* Assets.xcassets in Resources */,
+				BRES000001 /* exercises.json in Resources */,
+				BRES000002 /* SchibstedGrotesk.ttf in Resources */,
+				BRES000003 /* GeistMono.ttf in Resources */,
+				BRES000004 /* movements.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,6 +347,8 @@
 				B00000005 /* Routine.swift in Sources */,
 				B00000006 /* DataManager.swift in Sources */,
 				B00000007 /* ActiveWorkoutViewModel.swift in Sources */,
+				BLA0000001 /* RestTimerAttributes.swift in Sources */,
+				BLA0000002 /* RestTimerLiveActivity.swift in Sources */,
 				B00000008 /* WorkoutTabView.swift in Sources */,
 				B00000009 /* ActiveWorkoutView.swift in Sources */,
 				B0000000A /* HistoryView.swift in Sources */,
@@ -315,6 +358,7 @@
 				B0000000F /* AppTheme.swift in Sources */,
 				B00000010 /* ProgressView.swift in Sources */,
 				B00000011 /* VoltButton.swift in Sources */,
+				BMOV000001 /* MovementView.swift in Sources */,
 				B00000012 /* EmptyStateView.swift in Sources */,
 				B00000020 /* LoginView.swift in Sources */,
 				B00000015 /* SupabaseManager.swift in Sources */,
@@ -451,6 +495,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -479,6 +524,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

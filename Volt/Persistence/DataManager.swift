@@ -220,5 +220,101 @@ struct DataManager {
         }
 
         try? context.save()
+
+        // Then the full catalog (~870 exercises with instructions and photos)
+        importCatalogIfNeeded(context: context)
+    }
+}
+
+// MARK: - Exercise catalog (free-exercise-db, public domain)
+
+/// One entry of `Resources/exercises.json`, built by `tools/build_exercise_catalog.py`.
+struct CatalogExercise: Decodable {
+    let id: String
+    let name: String
+    let sourceName: String
+    let group: String
+    let equipmentType: String
+    let equipment: String
+    let primaryMuscles: [String]
+    let secondaryMuscles: [String]
+    let level: String
+    let mechanic: String
+    let force: String
+    let category: String
+    let instructions: [String]
+    let images: [String]
+}
+
+enum ExerciseCatalog {
+    /// Bump when `exercises.json` changes so existing installs import the new entries.
+    static let version = 1
+    static let imageBaseURL = URL(string: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/")!
+
+    private struct File: Decodable { let exercises: [CatalogExercise] }
+    private final class BundleToken {}
+
+    /// The bundled catalog, or an empty list if the resource is missing.
+    static func load(bundle: Bundle = Bundle(for: BundleToken.self)) -> [CatalogExercise] {
+        guard let url = bundle.url(forResource: "exercises", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(File.self, from: data)
+        else { return [] }
+        return file.exercises
+    }
+}
+
+extension DataManager {
+    private static let catalogVersionKey = "exerciseCatalogVersion"
+
+    /// Imports the bundled catalog once per catalog version. Called from `seedExercisesIfNeeded`.
+    static func importCatalogIfNeeded(context: ModelContext, defaults: UserDefaults = .standard) {
+        let imported = (try? context.fetchCount(FetchDescriptor<Exercise>(predicate: #Predicate<Exercise> { $0.catalogID != nil }))) ?? 0
+        guard imported == 0 || defaults.integer(forKey: catalogVersionKey) < ExerciseCatalog.version else { return }
+        importCatalog(ExerciseCatalog.load(), context: context)
+        defaults.set(ExerciseCatalog.version, forKey: catalogVersionKey)
+    }
+
+    /// Adds catalog exercises to the library. A built-in exercise with the same name gains the
+    /// catalog's details instead of being duplicated; a custom exercise with the same name is left alone.
+    static func importCatalog(_ catalog: [CatalogExercise], context: ModelContext) {
+        let existing = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
+        var byName: [String: Exercise] = [:]
+        for exercise in existing { byName[exercise.name.lowercased()] = byName[exercise.name.lowercased()] ?? exercise }
+        let importedIDs = Set(existing.compactMap(\.catalogID))
+
+        for item in catalog where !importedIDs.contains(item.id) {
+            let key = item.name.lowercased()
+            if let match = byName[key] {
+                guard !match.isCustom else { continue }
+                apply(item, to: match)
+            } else {
+                let exercise = Exercise(
+                    name: item.name,
+                    muscleGroup: Exercise.MuscleGroup(rawValue: item.group) ?? .fullBody,
+                    equipment: Exercise.Equipment(rawValue: item.equipmentType) ?? .other,
+                    instructions: item.instructions.joined(separator: "\n\n")
+                )
+                apply(item, to: exercise)
+                context.insert(exercise)
+                byName[key] = exercise
+            }
+        }
+        try? context.save()
+    }
+
+    private static func apply(_ item: CatalogExercise, to exercise: Exercise) {
+        exercise.catalogID = item.id
+        exercise.primaryMuscles = item.primaryMuscles
+        exercise.secondaryMuscles = item.secondaryMuscles
+        exercise.level = item.level
+        exercise.mechanic = item.mechanic
+        exercise.force = item.force
+        exercise.category = item.category
+        exercise.instructionSteps = item.instructions
+        exercise.imagePaths = item.images
+        if exercise.instructions.isEmpty {
+            exercise.instructions = item.instructions.joined(separator: "\n\n")
+        }
     }
 }
