@@ -151,6 +151,15 @@ struct ProfileView: View {
             .foregroundStyle(VoltColor.label)
             .listRowBackground(VoltColor.surface)
             .listRowSeparatorTint(VoltColor.border)
+
+            NavigationLink {
+                EquipmentSettingsView()
+            } label: {
+                Text("Gym Equipment")
+                    .foregroundStyle(VoltColor.label)
+            }
+            .listRowBackground(VoltColor.surface)
+            .listRowSeparatorTint(VoltColor.border)
         }
     }
 
@@ -300,3 +309,44 @@ private extension Calendar {
         .modelContainer(container)
         .environment(SupabaseManager.shared)
 }
+
+// MARK: - Equipment the user can access (used by workout suggestions)
+
+struct EquipmentSettingsView: View {
+    /// Comma-separated `Exercise.Equipment` raw values the user does NOT have. Empty = everything available.
+    @AppStorage("unavailableEquipment") private var unavailable = ""
+
+    private var unavailableSet: Set<String> {
+        Set(unavailable.split(separator: ",").map(String.init))
+    }
+
+    private func binding(for equipment: Exercise.Equipment) -> Binding<Bool> {
+        Binding(
+            get: { !unavailableSet.contains(equipment.rawValue) },
+            set: { isOn in
+                var set = unavailableSet
+                if isOn { set.remove(equipment.rawValue) } else { set.insert(equipment.rawValue) }
+                unavailable = set.sorted().joined(separator: ",")
+            }
+        )
+    }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(Exercise.Equipment.allCases, id: \.self) { equipment in
+                    Toggle(equipment.rawValue, isOn: binding(for: equipment))
+                        .tint(VoltColor.success)
+                        .listRowBackground(VoltColor.surface)
+                }
+            } footer: {
+                Text("Suggested workouts only use equipment that is switched on.")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(VoltColor.bg)
+        .navigationTitle("Gym Equipment")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+

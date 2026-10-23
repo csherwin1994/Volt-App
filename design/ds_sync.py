@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parent.parent
 REPO_TOKENS = ROOT / "design" / "tokens.json"
 
 SANS = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", system-ui, sans-serif'
-LINE_HEIGHTS = {"largeTitle": 35, "title": 26, "body": 22, "callout": 20, "sectionTitle": 18, "caption": 16, "number": 20}
-WEIGHTS = {"regular": 400, "medium": 500, "semibold": 600, "bold": 700}
+LINE_HEIGHTS = {"display": 52, "largeTitle": 40, "title": 28, "body": 22, "callout": 20, "sectionTitle": 18, "caption": 16, "number": 20}
+WEIGHTS = {"light": 300, "regular": 400, "medium": 500, "semibold": 600, "bold": 700}
 WEIGHT_NAMES = {v: k for k, v in WEIGHTS.items()}
 SPACING_USE = {
     "xs": "Gap between an icon and its label.",

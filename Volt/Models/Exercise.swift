@@ -29,6 +29,13 @@ final class Exercise {
     var imagePaths: [String] = []
 
     var isCompound: Bool { mechanic == "compound" }
+    /// Compound for catalog exercises; for built-in and custom ones, judged from the name.
+    var isLikelyCompound: Bool {
+        if !mechanic.isEmpty { return isCompound }
+        let compoundWords = ["Press", "Squat", "Deadlift", "Row", "Pull Up", "Chin Up", "Dip", "Lunge",
+                             "Thrust", "Clean", "Snatch", "Jerk", "Push Up", "Good Morning", "Rack Pull"]
+        return compoundWords.contains { name.localizedCaseInsensitiveContains($0) }
+    }
     var isStretch: Bool { category == "stretching" }
     var imageURLs: [URL] {
         imagePaths.compactMap { path in

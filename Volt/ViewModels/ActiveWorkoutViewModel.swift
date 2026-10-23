@@ -66,6 +66,26 @@ final class ActiveWorkoutViewModel {
         try? context.save()
     }
 
+    /// Starts the suggested workout with each exercise's target sets, reps and weight filled in.
+    func startFromRecommendation(_ recommendation: WorkoutRecommendation, routines: [Routine], context: ModelContext) {
+        if let name = recommendation.routineName, let routine = routines.first(where: { $0.name == name }) {
+            routine.lastUsedAt = Date()
+        }
+        startWorkout(title: recommendation.title, context: context)
+        guard let session else { return }
+        for (index, planned) in recommendation.exercises.enumerated() {
+            let log = ExerciseLog(exerciseName: planned.name, exerciseMuscleGroup: planned.muscleGroup, orderIndex: index)
+            context.insert(log)
+            for i in 0..<max(1, planned.sets) {
+                let set = WorkoutSet(orderIndex: i, weight: planned.weight ?? 0, reps: planned.reps)
+                context.insert(set)
+                log.sets.append(set)
+            }
+            session.exerciseLogs.append(log)
+        }
+        try? context.save()
+    }
+
     func addExercise(_ exercise: Exercise, context: ModelContext) {
         guard let session else { return }
         let log = ExerciseLog(

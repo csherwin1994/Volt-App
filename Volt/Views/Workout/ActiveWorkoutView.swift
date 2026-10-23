@@ -74,45 +74,51 @@ struct ActiveWorkoutView: View {
                 // Minimise: the workout keeps running and shows as a bar on the Train tab
                 VoltIconButton(icon: "chevron.down", action: { dismiss() })
                     .accessibilityLabel("Minimise workout")
-
-                VStack(spacing: 2) {
-                    TextField("Workout name", text: Binding(
-                        get: { vm.session?.title ?? "" },
-                        set: { newTitle in if let session = vm.session { session.title = newTitle } }
-                    ))
-                    .multilineTextAlignment(.center)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(VoltColor.label)
-                    Text(vm.formattedElapsed)
-                        .font(VoltFont.mono(13, weight: .semibold))
-                        .foregroundStyle(VoltColor.accent)
-                }
-                .frame(maxWidth: .infinity)
-
+                Spacer()
                 Button {
                     if completedSetCount == 0 { showingNothingToSave = true } else { showingFinish = true }
                 } label: {
                     Text("Finish")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(VoltColor.onSuccess)
-                        .padding(.horizontal, 14)
-                        .frame(height: 34)
+                        .padding(.horizontal, 18)
+                        .frame(height: 36)
                         .background(VoltColor.success)
-                        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm, style: .continuous))
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, VoltSpacing.sm)
+            .padding(.top, VoltSpacing.xs)
+
+            // The clock is the hero: large, light, tabular
+            VStack(spacing: 2) {
+                TextField("Workout name", text: Binding(
+                    get: { vm.session?.title ?? "" },
+                    set: { newTitle in if let session = vm.session { session.title = newTitle } }
+                ))
+                .multilineTextAlignment(.center)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(VoltColor.labelSecondary)
+                Text(vm.formattedElapsed)
+                    .font(.system(size: 52, weight: .light).monospacedDigit())
+                    .tracking(-1)
+                    .foregroundStyle(VoltColor.label)
+                    .contentTransition(.numericText())
+                    .accessibilityLabel("Workout time \(vm.formattedElapsed)")
+            }
+            .padding(.horizontal, VoltSpacing.gutter)
+            .padding(.bottom, VoltSpacing.sm)
 
             // Running totals
             let totalVol = vm.session?.totalVolume ?? 0
             HStack {
-                stat(value: "\(completedSetCount)", label: "sets done")
-                stat(value: WorkoutTabView.volumeText(totalVol, unit: "").trimmingCharacters(in: .whitespaces), label: "\(weightUnit) volume")
+                stat(value: "\(completedSetCount)", label: "sets")
+                stat(value: WorkoutTabView.volumeText(totalVol, unit: "").trimmingCharacters(in: .whitespaces), label: weightUnit)
                 stat(value: "\(sortedLogs.count)", label: "exercises")
             }
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
+            .padding(.horizontal, VoltSpacing.gutter)
 
             Divider().overlay(VoltColor.border)
         }
@@ -121,11 +127,11 @@ struct ActiveWorkoutView: View {
     private func stat(value: String, label: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(VoltFont.mono(17, weight: .semibold))
+                .font(.system(size: 20, weight: .regular).monospacedDigit())
                 .foregroundStyle(VoltColor.label)
             Text(label)
                 .font(.system(size: 12))
-                .foregroundStyle(VoltColor.labelTertiary)
+                .foregroundStyle(VoltColor.labelSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -138,7 +144,7 @@ struct ActiveWorkoutView: View {
                     .font(.system(size: 13))
                     .opacity(0.7)
                 Text(vm.formattedRest)
-                    .font(VoltFont.mono(24, weight: .semibold))
+                    .font(.system(size: 30, weight: .light).monospacedDigit())
                     .contentTransition(.numericText(countsDown: true))
                 Spacer()
                 restButton("−15") { vm.adjustRestTimer(by: -15) }
@@ -159,8 +165,8 @@ struct ActiveWorkoutView: View {
         .padding(.horizontal, VoltSpacing.md)
         .padding(.vertical, 14)
         .background(VoltColor.ink)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.2), radius: 16, y: 6)
+        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusLg, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Rest timer, \(vm.formattedRest) remaining")
     }
@@ -171,7 +177,7 @@ struct ActiveWorkoutView: View {
             .padding(.horizontal, 12)
             .frame(height: 34)
             .background(VoltColor.onInk.opacity(0.14))
-            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm, style: .continuous))
+            .clipShape(Capsule())
             .buttonStyle(.plain)
     }
 

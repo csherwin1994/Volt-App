@@ -34,44 +34,44 @@ extension UIColor {
 // Every token adapts to light and dark mode.
 enum VoltColor {
     // BEGIN GENERATED TOKENS
-    /// Screen background
-    static let bg             = Color(light: "F5F6F8", dark: "0B0C0E")
-    /// Cards and list rows
-    static let surface        = Color(light: "FFFFFF", dark: "16181C")
-    /// Input fields, secondary buttons, tags
-    static let surfaceHigh    = Color(light: "EEF0F3", dark: "202329")
-    /// Dividers between rows
-    static let border         = Color(light: "E3E5EA", dark: "262930")
+    /// Screen background: soft birch white / night forest
+    static let bg             = Color(light: "F3F3EF", dark: "111513")
+    /// Raised content when it must be set apart: inputs, the set table, sheets
+    static let surface        = Color(light: "FFFFFF", dark: "191E1C")
+    /// Input fields, secondary buttons, tags, untrained days
+    static let surfaceHigh    = Color(light: "E8E8E2", dark: "232926")
+    /// Hairline dividers between rows
+    static let border         = Color(light: "DCDCD5", dark: "2B322E")
     /// Faint dividers
-    static let borderSubtle   = Color(light: "EDEFF2", dark: "1D2024")
-    /// Primary buttons, selected chips, rest bar
-    static let ink            = Color(light: "121418", dark: "F2F3F5")
+    static let borderSubtle   = Color(light: "E9E9E3", dark: "1F2522")
+    /// Primary buttons, selected chips, rest bar (pine ink / pale birch)
+    static let ink            = Color(light: "1B2421", dark: "E7ECE8")
     /// Text and icons on ink
-    static let onInk          = Color(light: "FFFFFF", dark: "0B0C0E")
-    /// Timers, links, chart highlight, PR trophy
-    static let accent         = Color(light: "3352FF", dark: "7D8DFF")
-    /// Chart area fill
-    static let accentDim      = Color(light: "EBEEFF", dark: "1C2142")
+    static let onInk          = Color(light: "F7F7F4", dark: "111513")
+    /// Fjord blue: timers, links, current week in charts, PR trophy
+    static let accent         = Color(light: "3A6787", dark: "8FB5D1")
+    /// Chart area fill, accent tint
+    static let accentDim      = Color(light: "E2EBF1", dark: "1C2933")
     /// Primary text
-    static let label          = Color(light: "121418", dark: "F2F3F5")
+    static let label          = Color(light: "1B2421", dark: "E7ECE8")
     /// Secondary text, section titles
-    static let labelSecondary = Color(light: "5E6472", dark: "A3A9B5")
-    /// Hints, column headers, inactive tabs (4.5:1 on cards and the screen background; placeholder text on input fills is slightly lower)
-    static let labelTertiary  = Color(light: "6B717D", dark: "878D97")
-    /// Finish button, completed set tick
-    static let success        = Color(light: "15803D", dark: "3CCB70")
-    /// Text and icons on success (white in light mode, near-black in dark mode where success is bright)
-    static let onSuccess      = Color(light: "FFFFFF", dark: "0B0C0E")
+    static let labelSecondary = Color(light: "58615D", dark: "A3ACA7")
+    /// Hints, column headers, inactive tabs (4.5:1 on bg and surface)
+    static let labelTertiary  = Color(light: "67706B", dark: "8A938E")
+    /// Moss green: Finish button, completed set tick
+    static let success        = Color(light: "3B7A57", dark: "80C19A")
+    /// Text and icons on success
+    static let onSuccess      = Color(light: "FFFFFF", dark: "111513")
     /// Completed set row background
-    static let successSoft    = Color(light: "E5F5EB", dark: "10261A")
+    static let successSoft    = Color(light: "E4EFE8", dark: "17271E")
     /// Warnings
-    static let warning        = Color(light: "C2410C", dark: "FF9F0A")
-    /// Discard, delete, sign out
-    static let danger         = Color(light: "C42B1E", dark: "FF6E61")
+    static let warning        = Color(light: "A8541A", dark: "E8A15C")
+    /// Lingonberry: discard, delete, sign out
+    static let danger         = Color(light: "B0362E", dark: "E68A80")
     /// Destructive button background
-    static let dangerSoft     = Color(light: "FDECEA", dark: "2E1512")
+    static let dangerSoft     = Color(light: "F6E6E3", dark: "2B1A18")
     /// Chart bars that are not highlighted
-    static let bar            = Color(light: "D6DAE2", dark: "30343C")
+    static let bar            = Color(light: "D6D6CF", dark: "2E3531")
     // END GENERATED TOKENS
 
     // Aliases kept for older call sites; the redesign uses a single accent
@@ -100,11 +100,11 @@ enum VoltSpacing {
     static let lg: CGFloat = 24
     static let xl: CGFloat = 32
     static let xxl: CGFloat = 48
-    static let gutter: CGFloat = 20
-    static let radiusXs: CGFloat = 9
-    static let radiusSm: CGFloat = 10
-    static let radius: CGFloat = 16
-    static let radiusLg: CGFloat = 20
+    static let gutter: CGFloat = 24
+    static let radiusXs: CGFloat = 10
+    static let radiusSm: CGFloat = 12
+    static let radius: CGFloat = 20
+    static let radiusLg: CGFloat = 24
     // END GENERATED TOKENS
 }
 

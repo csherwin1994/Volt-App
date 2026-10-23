@@ -38,10 +38,10 @@ struct VoltButton: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(height: 54)
             .background(backgroundView)
             .foregroundStyle(foregroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(isLoading)
