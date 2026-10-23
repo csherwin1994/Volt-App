@@ -73,6 +73,23 @@ All colours live in `Volt/Theme/AppTheme.swift` as light/dark pairs, so the look
 
 An interactive web prototype of the design is in `prototype/volt-prototype.html`. Open it in any browser to click through the app with sample data.
 
+## Exercise library
+
+Volt ships with about 950 exercises: its own built-in list plus the 876 exercises of
+[free-exercise-db](https://github.com/yuhonas/free-exercise-db), which is in the public domain.
+Each catalog exercise has its primary and secondary muscles, equipment, level, step-by-step instructions
+and photos (loaded from the free-exercise-db repository on GitHub when you open an exercise).
+Built-in exercises that match a catalog entry keep their short name and gain its details.
+
+The catalog is bundled as `Volt/Resources/exercises.json`. To rebuild it from a newer copy of the database:
+
+```
+git clone --depth 1 https://github.com/yuhonas/free-exercise-db /tmp/free-exercise-db
+python3 tools/build_exercise_catalog.py /tmp/free-exercise-db/dist/exercises.json
+```
+
+Then bump `ExerciseCatalog.version` in `Volt/Persistence/DataManager.swift` so existing installs import the new entries.
+
 ## Personal records
 
 When you tick a set that beats your previous best for that exercise, Volt shows a "New PR" banner and a trophy on the set.

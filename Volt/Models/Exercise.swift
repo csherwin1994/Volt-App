@@ -10,6 +10,33 @@ final class Exercise {
     var instructions: String
     var isCustom: Bool
 
+    // Details from the bundled exercise catalog (free-exercise-db). Defaults keep older stores migrating cleanly.
+    /// The catalog entry this exercise came from, if any.
+    var catalogID: String? = nil
+    /// Detailed muscles, e.g. "quadriceps", "lats", "middle back".
+    var primaryMuscles: [String] = []
+    var secondaryMuscles: [String] = []
+    /// "beginner", "intermediate" or "expert".
+    var level: String = ""
+    /// "compound" or "isolation".
+    var mechanic: String = ""
+    /// "push", "pull" or "static".
+    var force: String = ""
+    /// "strength", "stretching", "plyometrics", "powerlifting", "olympic weightlifting", "strongman" or "cardio".
+    var category: String = "strength"
+    var instructionSteps: [String] = []
+    /// Photo paths relative to `ExerciseCatalog.imageBaseURL`.
+    var imagePaths: [String] = []
+
+    var isCompound: Bool { mechanic == "compound" }
+    var isStretch: Bool { category == "stretching" }
+    var imageURLs: [URL] {
+        imagePaths.compactMap { path in
+            path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+                .flatMap { URL(string: $0, relativeTo: ExerciseCatalog.imageBaseURL) }
+        }
+    }
+
     init(
         name: String,
         muscleGroup: MuscleGroup,

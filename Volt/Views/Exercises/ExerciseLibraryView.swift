@@ -6,13 +6,50 @@ struct ExerciseLibraryView: View {
     @State private var search = ""
     @State private var selectedMuscle: Exercise.MuscleGroup?
     @State private var showingCreate = false
+    @State private var equipmentFilter: Exercise.Equipment?
+    @State private var levelFilter: String?
+    @State private var includeStretches = false
     /// Set when shown inside the Library tab, which adds the Exercises / Routines switch.
     var librarySection: Binding<LibraryView.Section>? = nil
 
     private var filtered: [Exercise] {
         exercises.filter {
             (selectedMuscle == nil || $0.muscleGroup == selectedMuscle) &&
-            (search.isEmpty || $0.name.localizedCaseInsensitiveContains(search))
+            (equipmentFilter == nil || $0.equipment == equipmentFilter) &&
+            (levelFilter == nil || $0.level == levelFilter) &&
+            (includeStretches || !$0.isStretch) &&
+            (search.isEmpty
+                || $0.name.localizedCaseInsensitiveContains(search)
+                || $0.primaryMuscles.contains { $0.localizedCaseInsensitiveContains(search) })
+        }
+    }
+
+    private var activeFilterCount: Int {
+        (equipmentFilter == nil ? 0 : 1) + (levelFilter == nil ? 0 : 1) + (includeStretches ? 1 : 0)
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            Picker("Equipment", selection: $equipmentFilter) {
+                Text("Any equipment").tag(Exercise.Equipment?.none)
+                ForEach(Exercise.Equipment.allCases, id: \.self) { Text($0.rawValue).tag(Exercise.Equipment?.some($0)) }
+            }
+            Picker("Level", selection: $levelFilter) {
+                Text("Any level").tag(String?.none)
+                Text("Beginner").tag(String?.some("beginner"))
+                Text("Intermediate").tag(String?.some("intermediate"))
+                Text("Expert").tag(String?.some("expert"))
+            }
+            Toggle("Include stretches", isOn: $includeStretches)
+            if activeFilterCount > 0 {
+                Button("Clear Filters", role: .destructive) {
+                    equipmentFilter = nil; levelFilter = nil; includeStretches = false
+                }
+            }
+        } label: {
+            Image(systemName: activeFilterCount > 0 ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                .foregroundStyle(VoltColor.ink)
+                .accessibilityLabel(activeFilterCount > 0 ? "Filters, \(activeFilterCount) on" : "Filters")
         }
     }
 
@@ -57,14 +94,16 @@ struct ExerciseLibraryView: View {
                     }
                 }
             }
-            .searchable(text: $search, prompt: "Search exercises")
+            .searchable(text: $search, prompt: "Search \(exercises.count) exercises")
             .navigationTitle(librarySection == nil ? "Exercises" : "Library")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    filterMenu
                     Button { showingCreate = true } label: {
                         Image(systemName: "plus")
                             .foregroundStyle(VoltColor.ink)
                     }
+                    .accessibilityLabel("New exercise")
                 }
             }
             .sheet(isPresented: $showingCreate) { CreateExerciseView() }
@@ -75,39 +114,34 @@ struct ExerciseLibraryView: View {
 struct ExerciseRow: View {
     let exercise: Exercise
 
+    private var detail: String {
+        [exercise.muscleGroup.rawValue, exercise.equipment.rawValue, exercise.level.capitalized]
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(VoltColor.muscle(exercise.muscleGroup).opacity(0.12))
-                    .frame(width: 40, height: 40)
-                Image(systemName: exercise.icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(VoltColor.muscle(exercise.muscleGroup))
-            }
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.name)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(VoltColor.label)
-                HStack(spacing: 6) {
-                    MuscleBadge(group: exercise.muscleGroup)
-                    Text(exercise.equipment.rawValue)
-                        .font(.caption)
-                        .foregroundStyle(VoltColor.labelTertiary)
-                }
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundStyle(VoltColor.labelSecondary)
             }
+            Spacer(minLength: 8)
             if exercise.isCustom {
-                Spacer()
                 Text("Custom")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(VoltColor.accentPurple)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(VoltColor.accentPurple.opacity(0.12))
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(VoltColor.surfaceHigh)
+                    .foregroundStyle(VoltColor.labelSecondary)
                     .clipShape(Capsule())
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 }
 
@@ -150,17 +184,65 @@ struct ExerciseDetailView: View {
                 }
                 .listRowBackground(VoltColor.surface)
 
+                if !exercise.imageURLs.isEmpty {
+                    Section {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(exercise.imageURLs, id: \.self) { url in
+                                    AsyncImage(url: url) { phase in
+                                        if let image = phase.image {
+                                            image.resizable().scaledToFill()
+                                        } else {
+                                            VoltColor.surfaceHigh
+                                        }
+                                    }
+                                    .frame(width: 220, height: 165)
+                                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm, style: .continuous))
+                                    .accessibilityHidden(true)
+                                }
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                    }
+                    .listRowBackground(VoltColor.surface)
+                }
+
                 recordsSection
 
                 Section("Details") {
                     detailRow("Muscle Group", value: exercise.muscleGroup.rawValue)
                     detailRow("Equipment", value: exercise.equipment.rawValue)
+                    if !exercise.primaryMuscles.isEmpty {
+                        detailRow("Primary muscles", value: exercise.primaryMuscles.map(\.capitalized).joined(separator: ", "))
+                    }
+                    if !exercise.secondaryMuscles.isEmpty {
+                        detailRow("Also works", value: exercise.secondaryMuscles.map(\.capitalized).joined(separator: ", "))
+                    }
+                    if !exercise.level.isEmpty { detailRow("Level", value: exercise.level.capitalized) }
+                    if !exercise.mechanic.isEmpty { detailRow("Type", value: exercise.mechanic.capitalized) }
                     if exercise.isCustom { detailRow("Type", value: "Custom Exercise") }
                 }
                 .listRowBackground(VoltColor.surface)
                 .listRowSeparatorTint(VoltColor.border)
 
-                if !exercise.instructions.isEmpty {
+                if !exercise.instructionSteps.isEmpty {
+                    Section("How to do it") {
+                        ForEach(Array(exercise.instructionSteps.enumerated()), id: \.offset) { index, step in
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                Text("\(index + 1)")
+                                    .font(VoltFont.mono(14, weight: .semibold))
+                                    .foregroundStyle(VoltColor.labelSecondary)
+                                    .frame(width: 18, alignment: .leading)
+                                Text(step)
+                                    .font(.subheadline)
+                                    .foregroundStyle(VoltColor.label)
+                                    .lineSpacing(3)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                    .listRowBackground(VoltColor.surface)
+                } else if !exercise.instructions.isEmpty {
                     Section("Instructions") {
                         Text(exercise.instructions)
                             .font(.subheadline)

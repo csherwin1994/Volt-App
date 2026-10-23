@@ -30,6 +30,7 @@
 		B00000015 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000015 /* SupabaseManager.swift */; };
 		B00000021 /* WorkoutRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000021 /* WorkoutRecommendationEngine.swift */; };
 		B00000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000016 /* Assets.xcassets */; };
+		BRES000001 /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = ARES000001 /* exercises.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		A00000021 /* WorkoutRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRecommendationEngine.swift; sourceTree = "<group>"; };
 		A00000020 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A00000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ARES000001 /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
 		PROD000001 /* Volt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Volt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -82,6 +84,7 @@
 				GRPTHM00001 /* Theme */,
 				GRPCMP00001 /* Components */,
 				GRPSVC00001 /* Services */,
+				GRPRES0001 /* Resources */,
 				A00000016 /* Assets.xcassets */,
 			);
 			path = Volt;
@@ -122,6 +125,14 @@
 				A00000005 /* Routine.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		GRPRES0001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				ARES000001 /* exercises.json */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		GRPLIVE0001 /* LiveActivity */ = {
@@ -303,6 +314,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00000016 /* Assets.xcassets in Resources */,
+				BRES000001 /* exercises.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

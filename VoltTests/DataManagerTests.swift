@@ -75,4 +75,35 @@ final class DataManagerTests: XCTestCase {
             XCTAssertFalse(exercise.isCustom, "\(exercise.name) should not be marked as custom")
         }
     }
+
+    // MARK: - Exercise catalog
+
+    func test_catalog_loadsBundledExercises() {
+        XCTAssertGreaterThan(ExerciseCatalog.load().count, 800)
+    }
+
+    func test_catalog_importEnrichesBuiltInInsteadOfDuplicating() throws {
+        DataManager.seedExercisesIfNeeded(context: context)
+        DataManager.importCatalog(ExerciseCatalog.load(), context: context)
+        let bench = try context.fetch(FetchDescriptor<Exercise>(predicate: #Predicate<Exercise> { $0.name == "Bench Press" }))
+        XCTAssertEqual(bench.count, 1)
+        XCTAssertNotNil(bench.first?.catalogID)
+        XCTAssertFalse(bench.first?.instructionSteps.isEmpty ?? true)
+    }
+
+    func test_catalog_importIsIdempotent() throws {
+        let catalog = ExerciseCatalog.load()
+        DataManager.importCatalog(catalog, context: context)
+        let first = try context.fetchCount(FetchDescriptor<Exercise>())
+        DataManager.importCatalog(catalog, context: context)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<Exercise>()), first)
+    }
+
+    func test_catalog_doesNotOverwriteCustomExercise() throws {
+        let custom = Exercise(name: "Plank", muscleGroup: .core, equipment: .bodyweight, instructions: "My way", isCustom: true)
+        context.insert(custom)
+        DataManager.importCatalog(ExerciseCatalog.load(), context: context)
+        XCTAssertNil(custom.catalogID)
+        XCTAssertEqual(custom.instructions, "My way")
+    }
 }
