@@ -243,6 +243,7 @@ struct ExerciseLogCard: View {
     @AppStorage("weightUnit") private var weightUnit = "kg"
     @Query private var library: [Exercise]
     @State private var showingRemove = false
+    @State private var showingDemo = false
 
     private var sortedSets: [WorkoutSet] {
         log.sets.sorted { $0.orderIndex < $1.orderIndex }
@@ -266,6 +267,18 @@ struct ExerciseLogCard: View {
                 Text(log.exerciseMuscleGroup.uppercased())
                     .font(VoltFont.mono(10)).tracking(0.4)
                     .foregroundStyle(VoltColor.labelSecondary)
+                if let exercise, exercise.imageURLs.count >= 2 {
+                    Button { withAnimation(.easeInOut(duration: 0.2)) { showingDemo.toggle() } } label: {
+                        Text(showingDemo ? "HIDE" : "DEMO")
+                            .font(VoltFont.mono(11, weight: .medium)).tracking(0.9)
+                            .underline(true, color: VoltColor.label)
+                            .foregroundStyle(VoltColor.label)
+                            .frame(minWidth: 44, minHeight: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showingDemo ? "Hide demo" : "Show how to do \(log.exerciseName)")
+                }
                 Button { showingRemove = true } label: {
                     Image(systemName: "ellipsis").font(.system(size: 16))
                         .frame(width: 36, height: 36).contentShape(Rectangle())
@@ -279,6 +292,15 @@ struct ExerciseLogCard: View {
             .padding(.top, 14)
             .padding(.bottom, 6)
             VoltRule()
+
+            // How-to: two photos crossfading, right inside the card
+            if showingDemo, let exercise {
+                InlineDemoView(urls: exercise.imageURLs, name: log.exerciseName) {
+                    ExerciseDetailView(exercise: exercise)
+                }
+                .transition(.opacity)
+                VoltRule()
+            }
 
             // Column headers
             SetGrid {
@@ -336,6 +358,54 @@ struct ExerciseLogCard: View {
             .font(VoltFont.sans(20)).tracking(-0.5)
             .foregroundStyle(VoltColor.label)
             .multilineTextAlignment(.leading)
+    }
+}
+
+/// Compact how-to inside the workout: start and end photos crossfade; "Full guide" opens the exercise page.
+struct InlineDemoView<Guide: View>: View {
+    let urls: [URL]
+    let name: String
+    @ViewBuilder var guide: () -> Guide
+    @State private var frame = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let timer = Timer.publish(every: 1.8, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            VoltColor.surfaceHigh
+            ForEach(Array(urls.prefix(2).enumerated()), id: \.offset) { index, url in
+                AsyncImage(url: url) { phase in
+                    if let image = phase.image { image.resizable().scaledToFill() } else { Color.clear }
+                }
+                .grayscale(1)
+                .opacity(index == frame ? 1 : 0)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.7), value: frame)
+            }
+            Text(frame == 0 ? "START" : "END")
+                .font(VoltFont.mono(10)).tracking(0.8)
+                .padding(.horizontal, 7).padding(.vertical, 5)
+                .background(VoltColor.bg).foregroundStyle(VoltColor.label)
+                .padding(10)
+            VStack { Spacer(); HStack {
+                Spacer()
+                NavigationLink { guide() } label: {
+                    Text("FULL GUIDE →")
+                        .font(VoltFont.mono(11)).tracking(0.6)
+                        .padding(.horizontal, 10).padding(.vertical, 8)
+                        .background(VoltColor.ink).foregroundStyle(VoltColor.onInk)
+                }
+                .buttonStyle(.plain)
+            } }
+            .padding(10)
+        }
+        .aspectRatio(3 / 2, contentMode: .fit)
+        .clipped()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(name) demo, \(frame == 0 ? "start" : "end") position")
+        .onReceive(timer) { _ in
+            guard urls.count >= 2, !reduceMotion else { return }
+            frame = frame == 0 ? 1 : 0
+        }
     }
 }
 

@@ -46,6 +46,15 @@ FULL_BODY_CATEGORIES = {"olympic weightlifting", "strongman"}
 # A matched entry is published under the Volt name, so existing workout history lines up
 # and the built-in exercise gains the catalog's instructions and photos instead of being duplicated.
 ALIASES = {
+    "Deadlift": "Barbell Deadlift",
+    "Cable Curl": "Standing Biceps Cable Curl",
+    "Cable Fly": "Cable Crossover",
+    "Chest Dip": "Dips - Chest Version",
+    "Tricep Dip": "Dips - Triceps Version",
+    "Skull Crusher": "EZ-Bar Skullcrusher",
+    "T-Bar Row": "T-Bar Row with Handle",
+    "Rear Delt Fly": "Reverse Flyes",
+    "Cable Kickback": "One-Legged Cable Kickback",
     "Bench Press": "Barbell Bench Press - Medium Grip",
     "Incline Bench Press": "Barbell Incline Bench Press - Medium Grip",
     "Decline Bench Press": "Decline Barbell Bench Press",

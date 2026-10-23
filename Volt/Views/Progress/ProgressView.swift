@@ -8,6 +8,7 @@ struct ProgressView: View {
     @Query(sort: \Exercise.name) private var exercises: [Exercise]
     @AppStorage("weightUnit") private var weightUnit = "kg"
     @State private var selectedExercise: String?
+    @State private var selectedDay: SelectedDay?
 
     private var completed: [WorkoutSession] { sessions.filter { $0.endDate != nil } }
 
@@ -50,7 +51,7 @@ struct ProgressView: View {
                     ])
 
                     WeeklyVolumeChart(sessions: completed, weekStart: weekStart, unit: weightUnit)
-                    FrequencyHeatmap(sessions: completed, weekStart: weekStart)
+                    FrequencyHeatmap(sessions: completed, weekStart: weekStart) { selectedDay = SelectedDay(date: $0) }
                     ExerciseProgressChart(sessions: completed, exercises: exercises, selectedExercise: $selectedExercise)
                 }
                 .padding(.horizontal, VoltSpacing.gutter)
@@ -60,6 +61,10 @@ struct ProgressView: View {
             .scrollIndicators(.hidden)
             .background(VoltColor.bg.ignoresSafeArea())
             .navigationBarHidden(true)
+            .sheet(item: $selectedDay) { selected in
+                DaySheet(day: selected.date, sessions: completed)
+                    .presentationDetents([.medium, .large])
+            }
         }
     }
 }
@@ -123,6 +128,7 @@ struct WeeklyVolumeChart: View {
 struct FrequencyHeatmap: View {
     let sessions: [WorkoutSession]
     let weekStart: Date
+    var onSelect: (Date) -> Void = { _ in }
 
     private var days: [Date] {
         let cal = Calendar.current
@@ -144,11 +150,14 @@ struct FrequencyHeatmap: View {
                 ForEach(days, id: \.self) { day in
                     let trained = sessions.contains { cal.isDate($0.startDate, inSameDayAs: day) }
                     let future = day > today
+                    Button { onSelect(day) } label: {
                     Rectangle()
                         .fill(future ? Color.clear : (trained ? VoltColor.accent : VoltColor.surfaceHigh))
                         .frame(height: 30)
                         .overlay(Rectangle().strokeBorder(
                             cal.isDateInToday(day) ? VoltColor.label : (future ? VoltColor.border : .clear), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
                         .accessibilityLabel("\(day.formatted(date: .abbreviated, time: .omitted)), \(trained ? "trained" : "rest")")
                 }
             }

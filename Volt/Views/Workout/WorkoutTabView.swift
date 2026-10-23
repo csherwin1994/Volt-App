@@ -8,6 +8,7 @@ struct WorkoutTabView: View {
     @State private var showingActiveWorkout = false
     @State private var showingRoutinePicker = false
     @State private var showingCreateRoutine = false
+    @State private var selectedDay: SelectedDay?
     @AppStorage("username") private var username = "Athlete"
     @AppStorage("weightUnit") private var weightUnit = "kg"
     @AppStorage("unavailableEquipment") private var unavailableEquipment = ""
@@ -47,7 +48,7 @@ struct WorkoutTabView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 44) {
                         header
-                        WeekStrip(sessions: completed)
+                        WeekStrip(sessions: completed) { selectedDay = SelectedDay(date: $0) }
                         suggestionSection(recommendation)
                         routinesSection
                         if let last = lastWorkout { lastWorkoutSection(last) }
@@ -75,6 +76,22 @@ struct WorkoutTabView: View {
                 RoutinePickerSheet(workoutVM: workoutVM, showingActiveWorkout: $showingActiveWorkout)
             }
             .sheet(isPresented: $showingCreateRoutine) { CreateRoutineView() }
+            .sheet(item: $selectedDay) { selected in
+                let rec = recommendation
+                DaySheet(
+                    day: selected.date,
+                    sessions: completed,
+                    suggestion: workoutVM.isActive || rec.exercises.isEmpty ? nil : rec.title,
+                    isActive: workoutVM.isActive
+                ) { start in
+                    selectedDay = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        if start { workoutVM.startFromRecommendation(rec, routines: routines, context: modelContext) }
+                        showingActiveWorkout = true
+                    }
+                }
+                .presentationDetents([.medium, .large])
+            }
         }
         .environment(workoutVM)
     }
@@ -264,6 +281,7 @@ struct PlannedExerciseRow: View {
 // MARK: - Week strip: square cells, gold on training days, outlined today
 struct WeekStrip: View {
     let sessions: [WorkoutSession]
+    var onSelect: (Date) -> Void = { _ in }
 
     private var days: [Date] {
         var cal = Calendar.current
@@ -277,6 +295,7 @@ struct WeekStrip: View {
             ForEach(days, id: \.self) { day in
                 let trained = sessions.contains { Calendar.current.isDate($0.startDate, inSameDayAs: day) }
                 let isToday = Calendar.current.isDateInToday(day)
+                Button { onSelect(day) } label: {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(day.formatted(.dateTime.weekday(.abbreviated)).uppercased())
                         .font(VoltFont.mono(10)).tracking(0.8)
@@ -290,8 +309,11 @@ struct WeekStrip: View {
                         .overlay(Rectangle().strokeBorder(VoltColor.label, lineWidth: isToday && !trained ? 1 : 0))
                 }
                 .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(day.formatted(.dateTime.weekday(.wide))), \(trained ? "trained" : "rest day")")
+                .accessibilityAddTraits(.isButton)
             }
         }
     }
@@ -430,4 +452,90 @@ struct RoutinePickerSheet: View {
     WorkoutTabView()
         .modelContainer(for: [WorkoutSession.self, Exercise.self, Routine.self], inMemory: true)
         .environment(SupabaseManager.shared)
+}
+
+// MARK: - Tapping a day (Train week strip, Progress training days)
+
+struct SelectedDay: Identifiable {
+    let date: Date
+    var id: Date { date }
+}
+
+/// The day's workouts, a rest-day note, or (today) the suggested session with a Start button.
+struct DaySheet: View {
+    let day: Date
+    let sessions: [WorkoutSession]
+    var suggestion: String? = nil
+    var isActive = false
+    /// `true` when the person tapped Start on the suggestion, `false` to resume the running workout.
+    var onStart: ((Bool) -> Void)? = nil
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("weightUnit") private var weightUnit = "kg"
+
+    private var dayWorkouts: [WorkoutSession] {
+        sessions.filter { Calendar.current.isDate($0.startDate, inSameDayAs: day) }.sorted { $0.startDate < $1.startDate }
+    }
+    private var isToday: Bool { Calendar.current.isDateInToday(day) }
+    private var isFuture: Bool { day > Date() && !isToday }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        VoltSectionTitle("\(isFuture ? "Coming up" : (isToday ? "Today" : "Past")) · \(dayWorkouts.count) \(dayWorkouts.count == 1 ? "workout" : "workouts")")
+                        Text(!dayWorkouts.isEmpty ? "Trained." : (isFuture ? "Nothing planned." : "Rest day."))
+                            .font(VoltFont.sans(40)).tracking(-1.4)
+                            .foregroundStyle(VoltColor.label)
+                    }
+
+                    if !dayWorkouts.isEmpty {
+                        VStack(spacing: 0) {
+                            VoltRule(strong: true)
+                            ForEach(dayWorkouts) { session in
+                                NavigationLink { WorkoutDetailView(session: session) } label: {
+                                    WorkoutHistoryRow(session: session)
+                                }
+                                .buttonStyle(.plain)
+                                VoltRule()
+                            }
+                        }
+                    } else if !isToday {
+                        Text(isFuture
+                             ? "Your suggestion for this day is chosen on the day, from what you have trained since."
+                             : "No workout was logged on this day.")
+                            .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                    }
+
+                    if isToday, let onStart {
+                        if isActive {
+                            VoltButton("Resume Workout") { onStart(false); }
+                        } else if let suggestion {
+                            Text("Suggested: \(suggestion)")
+                                .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                            VoltButton("Start \(suggestion)") { onStart(true) }
+                        }
+                    }
+                }
+                .padding(VoltSpacing.gutter)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(VoltColor.bg.ignoresSafeArea())
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack {
+                    Text(day.formatted(.dateTime.weekday(.wide).day().month(.wide)).uppercased())
+                        .font(VoltFont.mono(11)).tracking(0.9).foregroundStyle(VoltColor.labelSecondary)
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark").font(.system(size: 18)).frame(width: 44, height: 44).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).foregroundStyle(VoltColor.label)
+                    .accessibilityLabel("Close")
+                }
+                .padding(.leading, VoltSpacing.gutter).padding(.trailing, 8).padding(.top, 8)
+                .background(VoltColor.bg)
+            }
+            .navigationBarHidden(true)
+        }
+    }
 }
