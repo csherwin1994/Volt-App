@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 TOKENS = ROOT / "design" / "tokens.json"
 SWIFT = ROOT / "Volt" / "Theme" / "AppTheme.swift"
 PROTOTYPE = ROOT / "prototype" / "volt-prototype.html"
+MOVEMENTS = ROOT / "design" / "movements.json"
+MOVEMENTS_APP = ROOT / "Volt" / "Resources" / "movements.json"
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -98,9 +100,11 @@ def main():
         (PROTOTYPE, replace_regions(
             PROTOTYPE.read_text(), [css_tokens(tokens)],
             "/* BEGIN GENERATED TOKENS */", "/* END GENERATED TOKENS */", PROTOTYPE)),
+        # Exercise animations: the app bundles a compact copy of design/movements.json
+        (MOVEMENTS_APP, json.dumps(json.loads(MOVEMENTS.read_text()), separators=(",", ":")) + "\n"),
     ]
 
-    stale = [path for path, new in targets if path.read_text() != new]
+    stale = [path for path, new in targets if not path.exists() or path.read_text() != new]
     if check:
         for path in stale:
             print(f"Out of date: {path.relative_to(ROOT)}")

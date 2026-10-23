@@ -124,6 +124,14 @@ struct ExerciseRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            if let movement = MovementLibrary.shared.movement(for: exercise.name) {
+                MovementThumbnail(movement: movement)
+            } else {
+                Rectangle().fill(VoltColor.surface)
+                    .frame(width: 54, height: 36)
+                    .overlay(Rectangle().strokeBorder(VoltColor.border, lineWidth: 1))
+                    .accessibilityHidden(true)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.name)
                     .font(VoltFont.sans(17))
@@ -186,7 +194,10 @@ struct ExerciseDetailView: View {
             VStack(alignment: .leading, spacing: 44) {
                 header
 
-                if exercise.imageURLs.count >= 1 {
+                // Line-drawn animation first; the catalog photos only when no movement pattern fits
+                if let movement = MovementLibrary.shared.movement(for: exercise.name) {
+                    MovementPlayer(movement: movement)
+                } else if exercise.imageURLs.count >= 1 {
                     ExerciseDemoView(urls: exercise.imageURLs, phases: phaseNames)
                 }
 

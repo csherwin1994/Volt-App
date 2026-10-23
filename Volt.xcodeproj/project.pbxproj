@@ -25,6 +25,7 @@
 		B0000000F /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000F /* AppTheme.swift */; };
 		B00000010 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000010 /* ProgressView.swift */; };
 		B00000011 /* VoltButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000011 /* VoltButton.swift */; };
+		BMOV000001 /* MovementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AMOV000001 /* MovementView.swift */; };
 		B00000012 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000012 /* EmptyStateView.swift */; };
 		B00000020 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000020 /* LoginView.swift */; };
 		B00000015 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000015 /* SupabaseManager.swift */; };
@@ -33,6 +34,7 @@
 		BRES000001 /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = ARES000001 /* exercises.json */; };
 		BRES000002 /* SchibstedGrotesk.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ARES000002 /* SchibstedGrotesk.ttf */; };
 		BRES000003 /* GeistMono.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ARES000003 /* GeistMono.ttf */; };
+		BRES000004 /* movements.json in Resources */ = {isa = PBXBuildFile; fileRef = ARES000004 /* movements.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +56,7 @@
 		A0000000F /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		A00000010 /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
 		A00000011 /* VoltButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoltButton.swift; sourceTree = "<group>"; };
+		AMOV000001 /* MovementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovementView.swift; sourceTree = "<group>"; };
 		A00000012 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		A00000015 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
 		A00000021 /* WorkoutRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRecommendationEngine.swift; sourceTree = "<group>"; };
@@ -62,6 +65,7 @@
 		ARES000001 /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
 		ARES000002 /* SchibstedGrotesk.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/SchibstedGrotesk.ttf; sourceTree = "<group>"; };
 		ARES000003 /* GeistMono.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/GeistMono.ttf; sourceTree = "<group>"; };
+		ARES000004 /* movements.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = movements.json; sourceTree = "<group>"; };
 		PROD000001 /* Volt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Volt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -98,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000011 /* VoltButton.swift */,
+				AMOV000001 /* MovementView.swift */,
 				A00000012 /* EmptyStateView.swift */,
 			);
 			path = Components;
@@ -137,6 +142,7 @@
 				ARES000001 /* exercises.json */,
 				ARES000002 /* SchibstedGrotesk.ttf */,
 				ARES000003 /* GeistMono.ttf */,
+				ARES000004 /* movements.json */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -323,6 +329,7 @@
 				BRES000001 /* exercises.json in Resources */,
 				BRES000002 /* SchibstedGrotesk.ttf in Resources */,
 				BRES000003 /* GeistMono.ttf in Resources */,
+				BRES000004 /* movements.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -351,6 +358,7 @@
 				B0000000F /* AppTheme.swift in Sources */,
 				B00000010 /* ProgressView.swift in Sources */,
 				B00000011 /* VoltButton.swift in Sources */,
+				BMOV000001 /* MovementView.swift in Sources */,
 				B00000012 /* EmptyStateView.swift in Sources */,
 				B00000020 /* LoginView.swift in Sources */,
 				B00000015 /* SupabaseManager.swift in Sources */,

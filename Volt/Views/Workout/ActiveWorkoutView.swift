@@ -259,6 +259,8 @@ struct ExerciseLogCard: View {
     }
 
     private var exercise: Exercise? { library.first { $0.name == log.exerciseName } }
+    private var movement: Movement? { MovementLibrary.shared.movement(for: log.exerciseName) }
+    private var hasDemo: Bool { movement != nil || (exercise?.imageURLs.count ?? 0) >= 2 }
 
     var body: some View {
         let previous = vm.previousSets(for: log.exerciseName)
@@ -276,7 +278,7 @@ struct ExerciseLogCard: View {
                 Text(log.exerciseMuscleGroup.uppercased())
                     .font(VoltFont.mono(10)).tracking(0.4)
                     .foregroundStyle(VoltColor.labelSecondary)
-                if let exercise, exercise.imageURLs.count >= 2 {
+                if hasDemo {
                     Button { withAnimation(.easeInOut(duration: 0.2)) { showingDemo.toggle() } } label: {
                         Text(showingDemo ? "HIDE" : "DEMO")
                             .font(VoltFont.mono(11, weight: .medium)).tracking(0.9)
@@ -302,10 +304,29 @@ struct ExerciseLogCard: View {
             .padding(.bottom, 6)
             VoltRule()
 
-            // How-to: two photos crossfading, right inside the card
-            if showingDemo, let exercise {
-                InlineDemoView(urls: exercise.imageURLs, name: log.exerciseName) {
-                    ExerciseDetailView(exercise: exercise)
+            // How-to right inside the card: the line-drawn animation, or the catalog photos when there is none
+            if showingDemo {
+                Group {
+                    if let movement {
+                        ZStack(alignment: .bottomTrailing) {
+                            MovementLoop(movement: movement)
+                            if let exercise {
+                                NavigationLink { ExerciseDetailView(exercise: exercise) } label: {
+                                    Text("FULL GUIDE →")
+                                        .font(VoltFont.mono(11)).tracking(0.6)
+                                        .padding(.horizontal, 10).padding(.vertical, 8)
+                                        .background(VoltColor.ink).foregroundStyle(VoltColor.onInk)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(10)
+                            }
+                        }
+                        .background(VoltColor.bg)
+                    } else if let exercise {
+                        InlineDemoView(urls: exercise.imageURLs, name: log.exerciseName) {
+                            ExerciseDetailView(exercise: exercise)
+                        }
+                    }
                 }
                 .transition(.opacity)
                 VoltRule()

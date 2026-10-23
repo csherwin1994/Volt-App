@@ -92,6 +92,10 @@ python3 tools/build_exercise_catalog.py /tmp/free-exercise-db/dist/exercises.jso
 
 Then bump `ExerciseCatalog.version` in `Volt/Persistence/DataManager.swift` so existing installs import the new entries.
 
+## Exercise animations
+
+Exercises are demonstrated by a line-drawn figure in the app's own style rather than stock photos: graphite strokes, the main working muscle in gold, and the bar path traced as a dashed gold line. 43 movement patterns cover all built-in exercises and about three quarters of the 870-exercise catalog (stretches and plyometrics still show photos). The exercise page has play/pause, slow motion and a rep counter; the live workout has a Demo toggle on every exercise card. See `design/movements.json` and CLAUDE.md for how to add or tune a movement.
+
 ## Personal records
 
 When you tick a set that beats your previous best for that exercise, Volt shows a "New PR" banner and a trophy on the set.
