@@ -68,7 +68,8 @@ struct WeeklyVolumeChart: View {
             } else {
                 Chart(data) { week in
                     BarMark(x: .value("Week", week.label), y: .value("Volume", week.volume))
-                        .foregroundStyle(VoltGradient.brand)
+                        // Highlight the current week; earlier weeks stay grey
+                        .foregroundStyle(week.label == data.last?.label ? VoltColor.accent : VoltColor.bar)
                         .cornerRadius(4)
                 }
                 .chartYAxis {
@@ -88,7 +89,6 @@ struct WeeklyVolumeChart: View {
         }
         .background(VoltColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-        .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius).stroke(VoltColor.border, lineWidth: 0.5))
         .padding(.horizontal, VoltSpacing.md)
     }
 }
@@ -125,11 +125,6 @@ struct FrequencyHeatmap: View {
                               ? VoltColor.surfaceHigh
                               : VoltColor.accent.opacity(0.2 + 0.8 * (Double(day.count) / Double(max))))
                         .frame(height: 26)
-                        .overlay(
-                            day.count > 0
-                            ? Text("\(day.count)").font(.system(size: 8, weight: .bold)).foregroundStyle(.white)
-                            : nil
-                        )
                 }
             }
             HStack {
@@ -143,7 +138,6 @@ struct FrequencyHeatmap: View {
         .padding(VoltSpacing.md)
         .background(VoltColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-        .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius).stroke(VoltColor.border, lineWidth: 0.5))
         .padding(.horizontal, VoltSpacing.md)
     }
 }
@@ -251,7 +245,6 @@ struct ExerciseProgressChart: View {
                 .padding(VoltSpacing.md)
                 .background(VoltColor.surface)
                 .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius).stroke(VoltColor.border, lineWidth: 0.5))
                 .padding(.horizontal, VoltSpacing.md)
             }
         }
@@ -273,7 +266,6 @@ private func emptyChart(message: String) -> some View {
     .padding(VoltSpacing.xl)
     .background(VoltColor.surface)
     .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-    .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius).stroke(VoltColor.border, lineWidth: 0.5))
     .padding(.horizontal, VoltSpacing.md)
 }
 

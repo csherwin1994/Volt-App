@@ -121,4 +121,41 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(re.targetReps, 10)
         XCTAssertEqual(re.targetWeight, 0)
     }
+
+    // MARK: - Personal records
+
+    private func completedSet(_ weight: Double, _ reps: Int) -> WorkoutSet {
+        let set = WorkoutSet(orderIndex: 0, weight: weight, reps: reps)
+        set.isCompleted = true
+        return set
+    }
+
+    func test_oneRepMax_singleRepIsTheWeight() {
+        XCTAssertEqual(PersonalRecords.estimatedOneRepMax(weight: 100, reps: 1), 100)
+    }
+
+    func test_oneRepMax_epley() {
+        // 100 × (1 + 10/30) = 133.33
+        XCTAssertEqual(PersonalRecords.estimatedOneRepMax(weight: 100, reps: 10), 133.33, accuracy: 0.01)
+    }
+
+    func test_record_heavierSetIsWeightPR() {
+        let best = PersonalRecords.best(in: [completedSet(80, 8), completedSet(85, 5)])
+        XCTAssertEqual(PersonalRecords.record(for: completedSet(87.5, 3), comparedTo: best)?.kind, .weight)
+    }
+
+    func test_record_moreRepsAtSameWeightIsOneRepMaxPR() {
+        let best = PersonalRecords.best(in: [completedSet(85, 5)])
+        XCTAssertEqual(PersonalRecords.record(for: completedSet(85, 7), comparedTo: best)?.kind, .oneRepMax)
+    }
+
+    func test_record_weakerSetIsNotPR() {
+        let best = PersonalRecords.best(in: [completedSet(85, 5)])
+        XCTAssertNil(PersonalRecords.record(for: completedSet(80, 5), comparedTo: best))
+    }
+
+    func test_record_firstTimeLoggedIsNotPR() {
+        let best = PersonalRecords.best(in: [])
+        XCTAssertNil(PersonalRecords.record(for: completedSet(60, 8), comparedTo: best))
+    }
 }

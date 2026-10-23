@@ -24,7 +24,7 @@ struct WelcomeView: View {
                             .frame(width: 96, height: 96)
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 44, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(VoltColor.onInk)
                     }
 
                     VStack(spacing: 6) {
@@ -60,7 +60,7 @@ struct WelcomeView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
                         .background(VoltGradient.brand)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(VoltColor.onInk)
                         .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
                 }
                 .padding(.horizontal, VoltSpacing.md)
@@ -110,5 +110,4 @@ private struct FeatureRow: View {
 
 #Preview("Welcome") {
     WelcomeView(hasSeenWelcome: .constant(false))
-        .preferredColorScheme(.dark)
 }

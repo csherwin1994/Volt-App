@@ -11,11 +11,11 @@ struct EmptyStateView: View {
         VStack(spacing: VoltSpacing.lg) {
             ZStack {
                 Circle()
-                    .fill(VoltColor.accentDim)
-                    .frame(width: 80, height: 80)
+                    .fill(VoltColor.surfaceHigh)
+                    .frame(width: 72, height: 72)
                 Image(systemName: icon)
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(VoltColor.accent)
+                    .font(.system(size: 28, weight: .regular))
+                    .foregroundStyle(VoltColor.labelSecondary)
             }
 
             VStack(spacing: VoltSpacing.xs) {

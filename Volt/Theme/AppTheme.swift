@@ -1,79 +1,81 @@
 import SwiftUI
+import UIKit
 
-// MARK: - Hex Colour Helper
+// MARK: - Hex Colour Helpers
 extension Color {
     init(hex: String) {
+        self.init(uiColor: UIColor(hex: hex))
+    }
+
+    /// A colour that switches with the system light / dark appearance.
+    init(light: String, dark: String) {
+        self.init(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light)
+        })
+    }
+}
+
+extension UIColor {
+    convenience init(hex: String) {
         let v = Scanner(string: hex)
         var rgb: UInt64 = 0
         v.scanHexInt64(&rgb)
         self.init(
-            red:   Double((rgb >> 16) & 0xFF) / 255,
-            green: Double((rgb >> 8)  & 0xFF) / 255,
-            blue:  Double( rgb        & 0xFF) / 255
+            red:   CGFloat((rgb >> 16) & 0xFF) / 255,
+            green: CGFloat((rgb >> 8)  & 0xFF) / 255,
+            blue:  CGFloat( rgb        & 0xFF) / 255,
+            alpha: 1
         )
     }
 }
 
 // MARK: - Colour Tokens
+// Clean & minimal: quiet neutrals, ink for primary actions, one blue accent for live state.
+// Every token adapts to light and dark mode.
 enum VoltColor {
     // Backgrounds
-    static let bg          = Color(hex: "0A0A0B")
-    static let surface     = Color(hex: "111113")
-    static let surfaceHigh = Color(hex: "1C1C1E")
-    static let border      = Color(hex: "2C2C2E")
-    static let borderSubtle = Color(hex: "1F1F21")
+    static let bg           = Color(light: "F5F6F8", dark: "0B0C0E")
+    static let surface      = Color(light: "FFFFFF", dark: "16181C")
+    static let surfaceHigh  = Color(light: "EEF0F3", dark: "202329")   // input fills, secondary buttons
+    static let border       = Color(light: "E3E5EA", dark: "262930")
+    static let borderSubtle = Color(light: "EDEFF2", dark: "1D2024")
 
-    // Brand
-    static let accent      = Color(hex: "5B8EFF")
-    static let accentDim   = Color(hex: "5B8EFF").opacity(0.18)
-    static let accentPurple = Color(hex: "A78BFA")
-    static let accentGreen  = Color(hex: "30D158")
+    // Ink — primary buttons and selected states (black in light mode, white in dark mode)
+    static let ink   = Color(light: "121418", dark: "F2F3F5")
+    static let onInk = Color(light: "FFFFFF", dark: "0B0C0E")
+
+    // Accent — used sparingly: timers, links, chart highlights
+    static let accent       = Color(light: "3352FF", dark: "7D8DFF")
+    static let accentDim    = Color(light: "EBEEFF", dark: "1C2142")
+    static let accentPurple = accent   // kept for older call sites; the redesign uses a single accent
+    static let accentGreen  = success
 
     // Text
-    static let label           = Color.white
-    static let labelSecondary  = Color(hex: "8E8E93")
-    static let labelTertiary   = Color(hex: "48484A")
+    static let label          = Color(light: "121418", dark: "F2F3F5")
+    static let labelSecondary = Color(light: "5E6472", dark: "A3A9B5")
+    static let labelTertiary  = Color(light: "9AA0AC", dark: "6A707C")
 
     // Semantic
-    static let success = Color(hex: "30D158")
-    static let warning = Color(hex: "FF9F0A")
-    static let danger  = Color(hex: "FF453A")
+    static let success     = Color(light: "17994A", dark: "3CCB70")
+    static let successSoft = Color(light: "E5F5EB", dark: "10261A")
+    static let warning     = Color(light: "C2410C", dark: "FF9F0A")
+    static let danger      = Color(light: "D92D20", dark: "FF6E61")
+    static let dangerSoft  = Color(light: "FDECEA", dark: "2E1512")
 
-    // Muscle Groups — vivid for dark backgrounds
-    static func muscle(_ group: Exercise.MuscleGroup) -> Color {
-        switch group {
-        case .chest:     return Color(hex: "FF6B6B")
-        case .back:      return Color(hex: "4ECDC4")
-        case .shoulders: return Color(hex: "FFD93D")
-        case .biceps:    return Color(hex: "6BCB77")
-        case .triceps:   return Color(hex: "4D96FF")
-        case .legs:      return Color(hex: "C77DFF")
-        case .glutes:    return Color(hex: "FF79C6")
-        case .core:      return Color(hex: "FF9A3C")
-        case .cardio:    return Color(hex: "FF4757")
-        case .fullBody:  return Color(hex: "2ED573")
-        }
-    }
+    // Chart bars that are not highlighted
+    static let bar = Color(light: "D6DAE2", dark: "30343C")
+
+    /// Muscle groups no longer get their own colours; tags are neutral so the screen stays calm.
+    static func muscle(_ group: Exercise.MuscleGroup) -> Color { labelSecondary }
 }
 
 // MARK: - Gradients
+// The redesign uses flat fills. These stay as single-colour "gradients" so existing call sites keep working.
 enum VoltGradient {
-    static let brand = LinearGradient(
-        colors: [Color(hex: "5B8EFF"), Color(hex: "A78BFA")],
-        startPoint: .topLeading, endPoint: .bottomTrailing
-    )
-    static let brandSubtle = LinearGradient(
-        colors: [Color(hex: "5B8EFF").opacity(0.25), Color(hex: "A78BFA").opacity(0.15)],
-        startPoint: .topLeading, endPoint: .bottomTrailing
-    )
-    static let success = LinearGradient(
-        colors: [Color(hex: "30D158"), Color(hex: "00C49A")],
-        startPoint: .topLeading, endPoint: .bottomTrailing
-    )
-    static let dark = LinearGradient(
-        colors: [VoltColor.surface, VoltColor.bg],
-        startPoint: .top, endPoint: .bottom
-    )
+    static let brand       = LinearGradient(colors: [VoltColor.ink, VoltColor.ink], startPoint: .top, endPoint: .bottom)
+    static let brandSubtle = LinearGradient(colors: [VoltColor.accentDim, VoltColor.accentDim.opacity(0.2)], startPoint: .top, endPoint: .bottom)
+    static let success     = LinearGradient(colors: [VoltColor.success, VoltColor.success], startPoint: .top, endPoint: .bottom)
+    static let dark        = LinearGradient(colors: [VoltColor.bg, VoltColor.bg], startPoint: .top, endPoint: .bottom)
 }
 
 // MARK: - Spacing & Sizing
@@ -85,10 +87,12 @@ enum VoltSpacing {
     static let xl: CGFloat  = 32
     static let xxl: CGFloat = 48
 
-    static let radius: CGFloat   = 14
+    static let gutter: CGFloat = 20
+
+    static let radius: CGFloat   = 16
     static let radiusLg: CGFloat = 20
-    static let radiusSm: CGFloat = 8
-    static let radiusXs: CGFloat = 6
+    static let radiusSm: CGFloat = 10
+    static let radiusXs: CGFloat = 9
 }
 
 // MARK: - Typography
@@ -96,53 +100,57 @@ enum VoltFont {
     static func display(_ size: CGFloat, weight: Font.Weight = .bold) -> Font {
         .system(size: size, weight: weight, design: .default)
     }
+    /// Numbers that line up (timers, weights, reps). Uses SF with tabular digits instead of a monospaced face.
     static func mono(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        .system(size: size, weight: weight).monospacedDigit()
     }
 }
 
 // MARK: - View Modifiers
 
 extension View {
-    /// Standard dark card — surface colour + border
+    /// Plain card: white surface on the grey background, no border or shadow.
     func voltCard(padding: CGFloat = VoltSpacing.md) -> some View {
         self
             .padding(padding)
             .background(VoltColor.surface)
-            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-            .overlay(
-                RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                    .stroke(VoltColor.border, lineWidth: 0.5)
-            )
+            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius, style: .continuous))
     }
 
     /// Section title + content stacked vertically
     func voltSection(_ title: String) -> some View {
-        VStack(alignment: .leading, spacing: VoltSpacing.sm) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(VoltColor.labelSecondary)
-                .textCase(.uppercase)
-                .tracking(0.6)
-                .padding(.horizontal, VoltSpacing.md)
+        VStack(alignment: .leading, spacing: 10) {
+            VoltSectionTitle(title)
+                .padding(.horizontal, VoltSpacing.gutter)
             self
         }
     }
 }
 
-// MARK: - Muscle Badge
+// MARK: - Section Title
+struct VoltSectionTitle: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(VoltColor.labelSecondary)
+    }
+}
+
+// MARK: - Muscle Badge (neutral tag)
 struct MuscleBadge: View {
     let group: Exercise.MuscleGroup
 
     var body: some View {
         Text(group.rawValue)
-            .font(.system(size: 11, weight: .semibold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(VoltColor.muscle(group).opacity(0.15))
-            .foregroundStyle(VoltColor.muscle(group))
+            .font(.system(size: 12, weight: .medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(VoltColor.surfaceHigh)
+            .foregroundStyle(VoltColor.labelSecondary)
             .clipShape(Capsule())
-            .overlay(Capsule().stroke(VoltColor.muscle(group).opacity(0.3), lineWidth: 0.5))
     }
 }
 
@@ -156,15 +164,13 @@ struct FilterChip: View {
         Button(action: action) {
             Text(label)
                 .font(.system(size: 13, weight: .medium))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(isSelected ? VoltColor.accent : VoltColor.surface)
-                .foregroundStyle(isSelected ? .white : VoltColor.labelSecondary)
+                .padding(.horizontal, 13)
+                .frame(height: 32)
+                .background(isSelected ? VoltColor.ink : VoltColor.surface)
+                .foregroundStyle(isSelected ? VoltColor.onInk : VoltColor.labelSecondary)
                 .clipShape(Capsule())
-                .overlay(Capsule().stroke(
-                    isSelected ? Color.clear : VoltColor.border, lineWidth: 0.5
-                ))
         }
+        .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 }

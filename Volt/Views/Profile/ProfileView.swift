@@ -69,7 +69,7 @@ struct ProfileView: View {
                         .frame(width: 68, height: 68)
                     Text(username.prefix(1).uppercased())
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(VoltColor.onInk)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     if editingName {
@@ -89,10 +89,10 @@ struct ProfileView: View {
                     }
                     if streak > 0 {
                         HStack(spacing: 4) {
-                            Image(systemName: "flame.fill").foregroundStyle(.orange).font(.caption)
+                            Image(systemName: "flame.fill").foregroundStyle(VoltColor.labelSecondary).font(.caption)
                             Text("\(streak)-day streak")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(VoltColor.labelSecondary)
                         }
                     }
                 }
@@ -113,13 +113,13 @@ struct ProfileView: View {
     private var statsSection: some View {
         Section("Stats") {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ProfileStatCard(value: "\(completed.count)", label: "Total Workouts", icon: "dumbbell.fill", color: VoltColor.accent) {
+                ProfileStatCard(value: "\(completed.count)", label: "Total Workouts", icon: "dumbbell.fill", color: VoltColor.labelSecondary) {
                     selectedTab = .history
                 }
-                ProfileStatCard(value: "\(workoutsThisWeek)", label: "This Week", icon: "calendar", color: VoltColor.accentGreen) {
+                ProfileStatCard(value: "\(workoutsThisWeek)", label: "This Week", icon: "calendar", color: VoltColor.labelSecondary) {
                     selectedTab = .history
                 }
-                ProfileStatCard(value: "\(totalSets)", label: "Total Sets", icon: "repeat", color: VoltColor.accentPurple) {
+                ProfileStatCard(value: "\(totalSets)", label: "Total Sets", icon: "repeat", color: VoltColor.labelSecondary) {
                     selectedTab = .progress
                 }
                 ProfileStatCard(
@@ -130,7 +130,7 @@ struct ProfileView: View {
                             : String(format: "%.0f", totalVolume),
                     label: "Volume (\(weightUnit))",
                     icon: "scalemass.fill",
-                    color: VoltColor.warning
+                    color: VoltColor.labelSecondary
                 ) {
                     selectedTab = .progress
                 }

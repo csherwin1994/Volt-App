@@ -5,11 +5,16 @@ struct RoutinesView: View {
     @Query(sort: \Routine.createdAt, order: .reverse) private var routines: [Routine]
     @Environment(\.modelContext) private var modelContext
     @State private var showingCreate = false
+    /// Set when shown inside the Library tab, which adds the Exercises / Routines switch.
+    var librarySection: Binding<LibraryView.Section>? = nil
 
     var body: some View {
         NavigationStack {
             ZStack {
                 VoltColor.bg.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                if let librarySection { LibrarySectionPicker(selection: librarySection) }
 
                 if routines.isEmpty {
                     EmptyStateView(
@@ -19,6 +24,7 @@ struct RoutinesView: View {
                         actionTitle: "Create Routine",
                         action: { showingCreate = true }
                     )
+                    .frame(maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(routines) { routine in
@@ -37,12 +43,13 @@ struct RoutinesView: View {
                     .scrollContentBackground(.hidden)
                     .listStyle(.insetGrouped)
                 }
+                }
             }
-            .navigationTitle("Routines")
+            .navigationTitle(librarySection == nil ? "Routines" : "Library")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button { showingCreate = true } label: {
-                        Image(systemName: "plus").foregroundStyle(VoltColor.accent)
+                        Image(systemName: "plus").foregroundStyle(VoltColor.ink)
                     }
                 }
             }

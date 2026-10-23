@@ -124,6 +124,12 @@ struct WorkoutHistoryRow: View {
 struct WorkoutDetailView: View {
     let session: WorkoutSession
     @AppStorage("weightUnit") private var weightUnit = "kg"
+    @Query(sort: \WorkoutSession.startDate) private var allSessions: [WorkoutSession]
+
+    /// Sets in this workout that beat every earlier workout for that exercise.
+    private var recordSetIDs: Set<UUID> {
+        PersonalRecords.recordSetIDs(in: session, history: allSessions)
+    }
 
     private var sortedLogs: [ExerciseLog] {
         session.exerciseLogs.sorted { $0.orderIndex < $1.orderIndex }
@@ -136,9 +142,9 @@ struct WorkoutDetailView: View {
                 // Summary strip
                 Section {
                     HStack(spacing: 0) {
-                        SummaryCell(value: session.formattedDuration, label: "Duration", icon: "clock.fill", color: VoltColor.accent)
+                        SummaryCell(value: session.formattedDuration, label: "Duration", icon: "clock.fill", color: VoltColor.labelSecondary)
                         Divider().frame(height: 40)
-                        SummaryCell(value: "\(session.totalSets)", label: "Sets", icon: "dumbbell.fill", color: VoltColor.accentPurple)
+                        SummaryCell(value: "\(session.totalSets)", label: "Sets", icon: "dumbbell.fill", color: VoltColor.labelSecondary)
                         Divider().frame(height: 40)
                         SummaryCell(
                             value: session.totalVolume >= 1000
@@ -146,7 +152,7 @@ struct WorkoutDetailView: View {
                                 : String(format: "%.0f", session.totalVolume),
                             label: "Volume \(weightUnit)",
                             icon: "scalemass.fill",
-                            color: VoltColor.accentGreen
+                            color: VoltColor.labelSecondary
                         )
                     }
                 }
@@ -154,6 +160,7 @@ struct WorkoutDetailView: View {
                 .listRowSeparatorTint(VoltColor.border)
 
                 // Exercises
+                let records = recordSetIDs
                 ForEach(sortedLogs) { log in
                     Section {
                         ForEach(Array(log.completedSets.enumerated()), id: \.element.id) { idx, set in
@@ -161,6 +168,11 @@ struct WorkoutDetailView: View {
                                 Text("Set \(idx + 1)")
                                     .font(.subheadline)
                                     .foregroundStyle(VoltColor.labelSecondary)
+                                if records.contains(set.id) {
+                                    Label("PR", systemImage: "trophy.fill")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(VoltColor.accent)
+                                }
                                 Spacer()
                                 Text(set.weight > 0
                                      ? String(format: "%.1f \(weightUnit) × %d", set.weight, set.reps)

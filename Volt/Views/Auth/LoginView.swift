@@ -2,6 +2,7 @@ import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var mode: Mode = .signIn
     @State private var email = ""
     @State private var password = ""
@@ -33,7 +34,7 @@ struct LoginView: View {
                                 .frame(width: 80, height: 80)
                             Image(systemName: "bolt.fill")
                                 .font(.system(size: 36, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(VoltColor.onInk)
                         }
                         Text("Volt")
                             .font(.system(size: 34, weight: .black))
@@ -52,7 +53,6 @@ struct LoginView: View {
                     }
                     .background(VoltColor.surface)
                     .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                    .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius).stroke(VoltColor.border, lineWidth: 0.5))
                     .padding(.horizontal, VoltSpacing.lg)
                     .padding(.bottom, VoltSpacing.lg)
 
@@ -145,7 +145,7 @@ struct LoginView: View {
                     }, onCompletion: { result in
                         Task { await handleAppleSignIn(result) }
                     })
-                    .signInWithAppleButtonStyle(.white)
+                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
                     .frame(height: 52)
                     .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
                     .padding(.horizontal, VoltSpacing.lg)
@@ -173,8 +173,6 @@ struct LoginView: View {
                         .frame(height: 52)
                         .background(VoltColor.surface)
                         .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                        .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                            .stroke(VoltColor.border, lineWidth: 0.5))
                     }
                     .padding(.horizontal, VoltSpacing.lg)
                     .padding(.top, VoltSpacing.sm)
@@ -198,7 +196,7 @@ struct LoginView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(selected ? AnyShapeStyle(VoltGradient.brand) : AnyShapeStyle(Color.clear))
-                .foregroundStyle(selected ? .white : VoltColor.labelSecondary)
+                .foregroundStyle(selected ? VoltColor.onInk : VoltColor.labelSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius - 1))
         }
     }
@@ -328,5 +326,4 @@ struct LoginView: View {
 #Preview {
     LoginView()
         .environment(SupabaseManager.shared)
-        .preferredColorScheme(.dark)
 }

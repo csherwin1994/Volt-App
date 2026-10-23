@@ -7,9 +7,13 @@ struct WorkoutTabView: View {
     @State private var showingActiveWorkout = false
     @State private var showingRoutinePicker = false
     @State private var showingCreateRoutine = false
+    @AppStorage("username") private var username = "Athlete"
+    @AppStorage("weightUnit") private var weightUnit = "kg"
 
     @Query(sort: \Routine.createdAt, order: .reverse) private var routines: [Routine]
     @Query(sort: \WorkoutSession.startDate, order: .reverse) private var sessions: [WorkoutSession]
+
+    private var completed: [WorkoutSession] { sessions.filter { $0.endDate != nil } }
 
     private var greeting: String {
         switch Calendar.current.component(.hour, from: Date()) {
@@ -19,51 +23,43 @@ struct WorkoutTabView: View {
         }
     }
 
-    private var streak: Int {
-        var count = 0
-        var day = Calendar.current.startOfDay(for: Date())
-        let completed = sessions.filter { $0.endDate != nil }
-        while completed.contains(where: { Calendar.current.isDate($0.startDate, inSameDayAs: day) }) {
-            count += 1
-            day = Calendar.current.date(byAdding: .day, value: -1, to: day)!
-        }
-        return count
-    }
-
-    private var lastWorkout: WorkoutSession? {
-        sessions.first { $0.endDate != nil }
-    }
+    private var lastWorkout: WorkoutSession? { completed.first }
 
     private var recommendation: WorkoutRecommendation {
-        WorkoutRecommendationEngine.recommend(from: sessions.filter { $0.endDate != nil }, routines: routines)
+        WorkoutRecommendationEngine.recommend(from: completed, routines: routines)
+    }
+
+    /// The routine the recommendation refers to, if it names one.
+    private var recommendedRoutine: Routine? {
+        routines.first { $0.name == recommendation.title }
     }
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 VoltColor.bg.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: VoltSpacing.xl) {
-                        heroSection
-                        startSection
+                    VStack(alignment: .leading, spacing: 28) {
+                        header
+                        WeekStrip(sessions: completed)
+                            .padding(.horizontal, VoltSpacing.gutter)
+                        startButton
                         recommendationSection
-                        if !routines.isEmpty { routinesSection }
+                        routinesSection
                         if let last = lastWorkout { lastWorkoutSection(last) }
                     }
-                    .padding(.bottom, VoltSpacing.xxl)
+                    .padding(.bottom, workoutVM.isActive ? 96 : VoltSpacing.xxl)
                 }
                 .scrollIndicators(.hidden)
 
-                // Floating active workout bar
+                // Floating bar while a workout is minimised
                 if workoutVM.isActive {
-                    VStack {
-                        Spacer()
-                        ActiveWorkoutBar(vm: workoutVM)
-                            .onTapGesture { showingActiveWorkout = true }
-                            .padding(.horizontal, VoltSpacing.md)
-                            .padding(.bottom, VoltSpacing.sm)
-                    }
+                    ActiveWorkoutBar(vm: workoutVM)
+                        .onTapGesture { showingActiveWorkout = true }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, VoltSpacing.sm)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .navigationBarHidden(true)
@@ -78,214 +74,171 @@ struct WorkoutTabView: View {
         .environment(workoutVM)
     }
 
-    // MARK: - Hero
-    private var heroSection: some View {
-        ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: VoltSpacing.radiusLg)
-                .fill(VoltGradient.brand)
-                .frame(maxWidth: .infinity)
-                .frame(height: 160)
-
-            // Subtle texture dots
-            GeometryReader { geo in
-                ForEach(0..<6, id: \.self) { i in
-                    Circle()
-                        .fill(Color.white.opacity(0.04))
-                        .frame(width: CGFloat(40 + i * 20))
-                        .offset(x: geo.size.width - 40 - CGFloat(i * 30),
-                                y: CGFloat(i * 15) - 20)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(greeting)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.75))
-                Text("Ready to train?")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(.white)
-                if streak > 0 {
-                    HStack(spacing: 5) {
-                        Image(systemName: "flame.fill")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.orange)
-                        Text("\(streak)-day streak")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(.white.opacity(0.12))
-                    .clipShape(Capsule())
-                }
-            }
-            .padding(VoltSpacing.lg)
+    // MARK: - Header
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(VoltColor.labelSecondary)
+            Text("\(greeting), \(username)")
+                .font(.system(size: 32, weight: .bold))
+                .tracking(-0.5)
+                .foregroundStyle(VoltColor.label)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, VoltSpacing.md)
+        .padding(.horizontal, VoltSpacing.gutter)
         .padding(.top, VoltSpacing.md)
     }
 
-    // MARK: - Start section
-    private var startSection: some View {
-        VStack(spacing: 10) {
-            // Primary CTA
-            Button {
-                guard !workoutVM.isActive else { showingActiveWorkout = true; return }
-                workoutVM.startWorkout(context: modelContext)
-                showingActiveWorkout = true
-            } label: {
-                HStack(spacing: VoltSpacing.sm) {
-                    Image(systemName: workoutVM.isActive ? "arrow.up.right.circle.fill" : "plus.circle.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                    Text(workoutVM.isActive ? "Resume Workout" : "Start Empty Workout")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(VoltGradient.brand)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-            }
-
-            HStack(spacing: 10) {
-                // Recommendation
-                Button { showingRoutinePicker = true } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text(recommendation.buttonLabel)
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(VoltColor.accentPurple.opacity(0.12))
-                    .foregroundStyle(VoltColor.accentPurple)
-                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                    .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                        .stroke(VoltColor.accentPurple.opacity(0.3), lineWidth: 0.5))
-                }
-
-                // From Routine
-                Button { showingRoutinePicker = true } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "repeat")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("From Routine")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(VoltColor.surface)
-                    .foregroundStyle(VoltColor.labelSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-                    .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                        .stroke(VoltColor.border, lineWidth: 0.5))
-                }
-            }
+    // MARK: - Start
+    private var startButton: some View {
+        VoltButton(
+            workoutVM.isActive ? "Resume Workout" : "Start Empty Workout",
+            icon: workoutVM.isActive ? nil : "plus"
+        ) {
+            guard !workoutVM.isActive else { showingActiveWorkout = true; return }
+            workoutVM.startWorkout(context: modelContext)
+            showingActiveWorkout = true
         }
-        .padding(.horizontal, VoltSpacing.md)
+        .padding(.horizontal, VoltSpacing.gutter)
     }
 
     // MARK: - Recommendation
     private var recommendationSection: some View {
-        VStack(alignment: .leading, spacing: VoltSpacing.sm) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(VoltColor.accentPurple)
-                Text("Suggested Next")
-                    .font(.system(size: 18, weight: .bold))
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(recommendation.title)
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(VoltColor.label)
+                Text(recommendation.reason)
+                    .font(.system(size: 14))
+                    .foregroundStyle(VoltColor.labelSecondary)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, VoltSpacing.md)
-
-            HStack(spacing: VoltSpacing.md) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(recommendation.title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(VoltColor.label)
-                    Text(recommendation.reason)
-                        .font(.caption)
-                        .foregroundStyle(VoltColor.labelSecondary)
-                        .lineLimit(2)
-                }
-                Spacer()
-                HStack(spacing: 6) {
-                    ForEach(recommendation.muscleGroups.prefix(3), id: \.self) { group in
-                        if let g = Exercise.MuscleGroup(rawValue: group) {
-                            MuscleBadge(group: g)
-                        }
-                    }
+            HStack(spacing: 6) {
+                ForEach(recommendation.muscleGroups.prefix(3), id: \.self) { group in
+                    if let g = Exercise.MuscleGroup(rawValue: group) { MuscleBadge(group: g) }
                 }
             }
-            .voltCard()
-            .padding(.horizontal, VoltSpacing.md)
+            VoltButton(
+                recommendedRoutine.map { "Start \($0.name)" } ?? "Choose a Routine",
+                style: .secondary
+            ) {
+                guard !workoutVM.isActive else { showingActiveWorkout = true; return }
+                if let routine = recommendedRoutine {
+                    workoutVM.startFromRoutine(routine, context: modelContext)
+                    showingActiveWorkout = true
+                } else {
+                    showingRoutinePicker = true
+                }
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .voltCard(padding: 18)
+        .padding(.horizontal, VoltSpacing.gutter)
+        .voltSection("Suggested next")
     }
 
     // MARK: - Routines
     private var routinesSection: some View {
-        VStack(alignment: .leading, spacing: VoltSpacing.sm) {
-            HStack {
-                Text("My Routines")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(VoltColor.label)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                VoltSectionTitle("Routines")
                 Spacer()
-                Button { showingCreateRoutine = true } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(VoltColor.accent)
-                }
+                Button("New") { showingCreateRoutine = true }
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(VoltColor.accent)
             }
-            .padding(.horizontal, VoltSpacing.md)
+            .padding(.horizontal, VoltSpacing.gutter)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(routines) { routine in
-                        RoutineQuickCard(routine: routine) {
+            VStack(spacing: 0) {
+                if routines.isEmpty {
+                    EmptyStateView(
+                        icon: "list.bullet.rectangle",
+                        title: "No routines yet",
+                        message: "Save a workout plan to start it with one tap."
+                    )
+                } else {
+                    ForEach(Array(routines.enumerated()), id: \.element.id) { index, routine in
+                        if index > 0 { Divider().overlay(VoltColor.border).padding(.leading, VoltSpacing.md) }
+                        RoutineListRow(routine: routine) {
                             guard !workoutVM.isActive else { showingActiveWorkout = true; return }
                             workoutVM.startFromRoutine(routine, context: modelContext)
                             showingActiveWorkout = true
                         }
                     }
                 }
-                .padding(.horizontal, VoltSpacing.md)
             }
+            .background(VoltColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius, style: .continuous))
+            .padding(.horizontal, VoltSpacing.gutter)
         }
     }
 
     // MARK: - Last workout
     private func lastWorkoutSection(_ session: WorkoutSession) -> some View {
-        VStack(alignment: .leading, spacing: VoltSpacing.sm) {
-            Text("Last Workout")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(VoltColor.label)
-                .padding(.horizontal, VoltSpacing.md)
-
-            HStack(spacing: VoltSpacing.md) {
-                VStack(alignment: .leading, spacing: 4) {
+        NavigationLink { WorkoutDetailView(session: session) } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(session.title)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(VoltColor.label)
-                    Text(session.startDate.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                    Text("\(session.startDate.formatted(.relative(presentation: .named))) · \(session.formattedDuration) · \(Self.volumeText(session.totalVolume, unit: weightUnit))")
+                        .font(VoltFont.mono(13, weight: .regular))
                         .foregroundStyle(VoltColor.labelSecondary)
                 }
                 Spacer()
-                HStack(spacing: 14) {
-                    miniStat(value: session.formattedDuration, icon: "clock")
-                    miniStat(value: "\(session.totalSets) sets", icon: "dumbbell")
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(VoltColor.labelTertiary)
             }
-            .voltCard()
             .padding(.horizontal, VoltSpacing.md)
+            .padding(.vertical, 14)
+            .background(VoltColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius, style: .continuous))
         }
+        .buttonStyle(.plain)
+        .padding(.horizontal, VoltSpacing.gutter)
+        .voltSection("Last workout")
     }
 
-    private func miniStat(value: String, icon: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon).font(.caption2).foregroundStyle(VoltColor.labelTertiary)
-            Text(value).font(.caption.weight(.medium)).foregroundStyle(VoltColor.labelSecondary)
+    static func volumeText(_ volume: Double, unit: String) -> String {
+        volume >= 1000 ? String(format: "%.1fk \(unit)", volume / 1000) : String(format: "%.0f \(unit)", volume)
+    }
+}
+
+// MARK: - Week strip (Mon–Sun, filled on training days)
+struct WeekStrip: View {
+    let sessions: [WorkoutSession]
+
+    private var days: [Date] {
+        var cal = Calendar.current
+        cal.firstWeekday = 2 // Monday
+        let start = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? cal.startOfDay(for: Date())
+        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: start) }
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(days, id: \.self) { day in
+                let trained = sessions.contains { Calendar.current.isDate($0.startDate, inSameDayAs: day) }
+                let isToday = Calendar.current.isDateInToday(day)
+                VStack(spacing: 6) {
+                    Text(day.formatted(.dateTime.weekday(.narrow)))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(isToday ? VoltColor.label : VoltColor.labelTertiary)
+                    Text(day.formatted(.dateTime.day()))
+                        .font(VoltFont.mono(14, weight: .medium))
+                        .foregroundStyle(trained ? VoltColor.onInk : VoltColor.labelSecondary)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(trained ? VoltColor.ink : VoltColor.surface))
+                        .overlay(Circle().stroke(VoltColor.ink, lineWidth: isToday && !trained ? 1.5 : 0))
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(day.formatted(.dateTime.weekday(.wide))), \(trained ? "trained" : "rest day")")
+            }
         }
     }
 }
@@ -293,85 +246,71 @@ struct WorkoutTabView: View {
 // MARK: - Floating active bar
 struct ActiveWorkoutBar: View {
     let vm: ActiveWorkoutViewModel
+    @State private var pulse = false
 
     var body: some View {
-        HStack(spacing: VoltSpacing.md) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(VoltColor.success)
-                    .frame(width: 8, height: 8)
-                    .shadow(color: VoltColor.success, radius: 4)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(vm.session?.title ?? "Active Workout")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(VoltColor.label)
-                    Text(vm.formattedElapsed)
-                        .font(VoltFont.mono(13))
-                        .foregroundStyle(VoltColor.labelSecondary)
-                }
+        HStack(spacing: 12) {
+            Circle()
+                .fill(VoltColor.success)
+                .frame(width: 8, height: 8)
+                .opacity(pulse ? 0.35 : 1)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: pulse)
+                .onAppear { pulse = true }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(vm.session?.title ?? "Workout")
+                    .font(.system(size: 15, weight: .semibold))
+                Text(vm.formattedElapsed)
+                    .font(VoltFont.mono(13, weight: .regular))
+                    .opacity(0.7)
             }
             Spacer()
-            Text("Tap to open")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(VoltColor.accent)
+            Text("Resume")
+                .font(.system(size: 14, weight: .semibold))
         }
+        .foregroundStyle(VoltColor.onInk)
         .padding(.horizontal, VoltSpacing.md)
         .padding(.vertical, 12)
-        .background(VoltColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusLg))
-        .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radiusLg)
-            .stroke(VoltColor.success.opacity(0.4), lineWidth: 1))
-        .shadow(color: .black.opacity(0.3), radius: 16, y: 4)
+        .background(VoltColor.ink)
+        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius, style: .continuous))
+        .shadow(color: .black.opacity(0.2), radius: 16, y: 6)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
-// MARK: - Routine quick card
-struct RoutineQuickCard: View {
+// MARK: - Routine row
+struct RoutineListRow: View {
     let routine: Routine
     let onStart: () -> Void
 
-    private var topMuscles: [Exercise.MuscleGroup] {
-        Array(Set(routine.exercises.map(\.exerciseMuscleGroup)))
-            .compactMap { Exercise.MuscleGroup(rawValue: $0) }
-            .prefix(2)
-            .map { $0 }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: VoltSpacing.sm) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(routine.name)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(VoltColor.label)
-                        .lineLimit(1)
-                    Text("\(routine.exerciseCount) exercises")
-                        .font(.caption)
-                        .foregroundStyle(VoltColor.labelSecondary)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(routine.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(VoltColor.label)
+                    .lineLimit(1)
+                Group {
+                    if let last = routine.lastUsedAt {
+                        Text("\(routine.exerciseCount) exercises · \(last.formatted(.relative(presentation: .named)))")
+                    } else {
+                        Text("\(routine.exerciseCount) exercises")
+                    }
                 }
-                Spacer()
+                .font(.system(size: 13))
+                .foregroundStyle(VoltColor.labelSecondary)
             }
-            if !topMuscles.isEmpty {
-                HStack(spacing: 5) {
-                    ForEach(topMuscles, id: \.self) { MuscleBadge(group: $0) }
-                }
-            }
-            Button(action: onStart) {
-                Text("Start")
-                    .font(.caption.weight(.bold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(VoltGradient.brand)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm))
-            }
+            Spacer()
+            Button("Start", action: onStart)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(VoltColor.label)
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                .background(VoltColor.surfaceHigh)
+                .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm, style: .continuous))
+                .buttonStyle(.plain)
         }
-        .padding(VoltSpacing.md)
-        .frame(width: 170)
-        .background(VoltColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-        .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius)
-            .stroke(VoltColor.border, lineWidth: 0.5))
+        .padding(.horizontal, VoltSpacing.md)
+        .padding(.vertical, 12)
     }
 }
 
@@ -439,5 +378,4 @@ struct RoutinePickerSheet: View {
     WorkoutTabView()
         .modelContainer(for: [WorkoutSession.self, Exercise.self, Routine.self], inMemory: true)
         .environment(SupabaseManager.shared)
-        .preferredColorScheme(.dark)
 }

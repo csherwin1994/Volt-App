@@ -6,6 +6,8 @@ struct ExerciseLibraryView: View {
     @State private var search = ""
     @State private var selectedMuscle: Exercise.MuscleGroup?
     @State private var showingCreate = false
+    /// Set when shown inside the Library tab, which adds the Exercises / Routines switch.
+    var librarySection: Binding<LibraryView.Section>? = nil
 
     private var filtered: [Exercise] {
         exercises.filter {
@@ -19,6 +21,8 @@ struct ExerciseLibraryView: View {
             ZStack {
                 VoltColor.bg.ignoresSafeArea()
                 VStack(spacing: 0) {
+                    if let librarySection { LibrarySectionPicker(selection: librarySection) }
+
                     // Muscle filter
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -29,10 +33,9 @@ struct ExerciseLibraryView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, VoltSpacing.md)
+                        .padding(.horizontal, VoltSpacing.gutter)
                         .padding(.vertical, VoltSpacing.sm)
                     }
-                    Divider().background(VoltColor.border)
 
                     if filtered.isEmpty {
                         EmptyStateView(
@@ -55,12 +58,12 @@ struct ExerciseLibraryView: View {
                 }
             }
             .searchable(text: $search, prompt: "Search exercises")
-            .navigationTitle("Exercises")
+            .navigationTitle(librarySection == nil ? "Exercises" : "Library")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button { showingCreate = true } label: {
                         Image(systemName: "plus")
-                            .foregroundStyle(VoltColor.accent)
+                            .foregroundStyle(VoltColor.ink)
                     }
                 }
             }
@@ -110,6 +113,18 @@ struct ExerciseRow: View {
 
 struct ExerciseDetailView: View {
     let exercise: Exercise
+    @AppStorage("weightUnit") private var weightUnit = "kg"
+    @Query(sort: \WorkoutSession.startDate, order: .reverse) private var sessions: [WorkoutSession]
+
+    /// Completed sets of this exercise across finished workouts, newest workout first.
+    private var history: [(date: Date, set: WorkoutSet)] {
+        sessions.filter { $0.endDate != nil }.flatMap { session in
+            session.exerciseLogs
+                .filter { $0.exerciseName == exercise.name }
+                .flatMap(\.completedSets)
+                .map { (date: session.startDate, set: $0) }
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -135,6 +150,8 @@ struct ExerciseDetailView: View {
                 }
                 .listRowBackground(VoltColor.surface)
 
+                recordsSection
+
                 Section("Details") {
                     detailRow("Muscle Group", value: exercise.muscleGroup.rawValue)
                     detailRow("Equipment", value: exercise.equipment.rawValue)
@@ -158,6 +175,53 @@ struct ExerciseDetailView: View {
         }
         .navigationTitle(exercise.name)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: - Personal records
+    @ViewBuilder
+    private var recordsSection: some View {
+        let entries = history.filter { $0.set.weight > 0 && $0.set.reps > 0 }
+        Section("Personal Records") {
+            if let heaviest = entries.max(by: { $0.set.weight < $1.set.weight }),
+               let bestOneRep = entries.max(by: {
+                   PersonalRecords.estimatedOneRepMax(weight: $0.set.weight, reps: $0.set.reps)
+                       < PersonalRecords.estimatedOneRepMax(weight: $1.set.weight, reps: $1.set.reps)
+               }) {
+                recordRow(
+                    "Heaviest set",
+                    value: "\(heaviest.set.weight.formatted()) \(weightUnit) × \(heaviest.set.reps)",
+                    date: heaviest.date
+                )
+                recordRow(
+                    "Estimated 1-rep max",
+                    value: "\(PersonalRecords.estimatedOneRepMax(weight: bestOneRep.set.weight, reps: bestOneRep.set.reps).formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit)",
+                    date: bestOneRep.date
+                )
+                let workouts = Set(entries.map(\.date)).count
+                detailRow("Times logged", value: "\(workouts) \(workouts == 1 ? "workout" : "workouts")")
+            } else {
+                Text("Log this exercise in a workout to start tracking records.")
+                    .font(.subheadline)
+                    .foregroundStyle(VoltColor.labelSecondary)
+            }
+        }
+        .listRowBackground(VoltColor.surface)
+        .listRowSeparatorTint(VoltColor.border)
+    }
+
+    private func recordRow(_ label: String, value: String, date: Date) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).foregroundStyle(VoltColor.labelSecondary).font(.subheadline)
+                Text(date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(VoltColor.labelTertiary)
+            }
+            Spacer()
+            Text(value)
+                .font(VoltFont.mono(15, weight: .semibold))
+                .foregroundStyle(VoltColor.label)
+        }
     }
 
     private func detailRow(_ label: String, value: String) -> some View {

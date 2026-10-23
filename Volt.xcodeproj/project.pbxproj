@@ -14,6 +14,8 @@
 		B00000005 /* Routine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000005 /* Routine.swift */; };
 		B00000006 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000006 /* DataManager.swift */; };
 		B00000007 /* ActiveWorkoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000007 /* ActiveWorkoutViewModel.swift */; };
+		BLA0000001 /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ALA0000001 /* RestTimerAttributes.swift */; };
+		BLA0000002 /* RestTimerLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = ALA0000002 /* RestTimerLiveActivity.swift */; };
 		B00000008 /* WorkoutTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000008 /* WorkoutTabView.swift */; };
 		B00000009 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000009 /* ActiveWorkoutView.swift */; };
 		B0000000A /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000A /* HistoryView.swift */; };
@@ -38,6 +40,8 @@
 		A00000005 /* Routine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routine.swift; sourceTree = "<group>"; };
 		A00000006 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
 		A00000007 /* ActiveWorkoutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutViewModel.swift; sourceTree = "<group>"; };
+		ALA0000001 /* RestTimerAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerAttributes.swift; sourceTree = "<group>"; };
+		ALA0000002 /* RestTimerLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivity.swift; sourceTree = "<group>"; };
 		A00000008 /* WorkoutTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTabView.swift; sourceTree = "<group>"; };
 		A00000009 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
 		A0000000A /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -72,6 +76,7 @@
 				GRPAPP00001 /* App */,
 				GRPMDL00001 /* Models */,
 				GRPVWM00001 /* ViewModels */,
+				GRPLIVE0001 /* LiveActivity */,
 				GRPVWS00001 /* Views */,
 				GRPPER00001 /* Persistence */,
 				GRPTHM00001 /* Theme */,
@@ -117,6 +122,15 @@
 				A00000005 /* Routine.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		GRPLIVE0001 /* LiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				ALA0000001 /* RestTimerAttributes.swift */,
+				ALA0000002 /* RestTimerLiveActivity.swift */,
+			);
+			path = LiveActivity;
 			sourceTree = "<group>";
 		};
 		GRPVWM00001 /* ViewModels */ = {
@@ -306,6 +320,8 @@
 				B00000005 /* Routine.swift in Sources */,
 				B00000006 /* DataManager.swift in Sources */,
 				B00000007 /* ActiveWorkoutViewModel.swift in Sources */,
+				BLA0000001 /* RestTimerAttributes.swift in Sources */,
+				BLA0000002 /* RestTimerLiveActivity.swift in Sources */,
 				B00000008 /* WorkoutTabView.swift in Sources */,
 				B00000009 /* ActiveWorkoutView.swift in Sources */,
 				B0000000A /* HistoryView.swift in Sources */,
@@ -451,6 +467,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -479,6 +496,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

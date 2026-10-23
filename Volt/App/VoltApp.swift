@@ -9,7 +9,6 @@ struct VoltApp: App {
         WindowGroup {
             RootView()
                 .environment(supabase)
-                .preferredColorScheme(.dark)
         }
         .modelContainer(for: [
             WorkoutSession.self,
@@ -55,7 +54,7 @@ struct RootView: View {
                         .frame(width: 80, height: 80)
                     Image(systemName: "bolt.fill")
                         .font(.system(size: 36, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(VoltColor.onInk)
                 }
                 Text("Volt")
                     .font(.system(size: 34, weight: .black))
