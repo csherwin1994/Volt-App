@@ -124,31 +124,37 @@ struct ExerciseRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.name)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(VoltFont.sans(16, weight: .regular))
                     .foregroundStyle(VoltColor.label)
                 Text(detail)
-                    .font(.system(size: 13))
+                    .font(VoltFont.sans(13))
                     .foregroundStyle(VoltColor.labelSecondary)
             }
             Spacer(minLength: 8)
             if exercise.isCustom {
                 Text("Custom")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(VoltFont.sans(12, weight: .regular))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background(VoltColor.surfaceHigh)
                     .foregroundStyle(VoltColor.labelSecondary)
-                    .clipShape(Capsule())
+                    .clipShape(Rectangle())
             }
         }
         .padding(.vertical, 2)
     }
 }
 
+// MARK: - Exercise page (one interactive template for every exercise)
+
 struct ExerciseDetailView: View {
     let exercise: Exercise
     @AppStorage("weightUnit") private var weightUnit = "kg"
     @Query(sort: \WorkoutSession.startDate, order: .reverse) private var sessions: [WorkoutSession]
+    @Environment(ActiveWorkoutViewModel.self) private var workoutVM: ActiveWorkoutViewModel?
+    @Environment(\.modelContext) private var modelContext
+    @State private var targetWeight: Double?
+    @State private var addedToWorkout = false
 
     /// Completed sets of this exercise across finished workouts, newest workout first.
     private var history: [(date: Date, set: WorkoutSet)] {
@@ -160,157 +166,479 @@ struct ExerciseDetailView: View {
         }
     }
 
-    var body: some View {
-        ZStack {
-            VoltColor.bg.ignoresSafeArea()
-            List {
-                Section {
-                    HStack {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: VoltSpacing.radiusSm)
-                                .fill(VoltColor.muscle(exercise.muscleGroup).opacity(0.12))
-                                .frame(width: 56, height: 56)
-                            Image(systemName: exercise.icon)
-                                .font(.system(size: 26))
-                                .foregroundStyle(VoltColor.muscle(exercise.muscleGroup))
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(exercise.name).font(.headline).foregroundStyle(VoltColor.label)
-                            MuscleBadge(group: exercise.muscleGroup)
-                        }
-                        .padding(.leading, 4)
-                    }
-                    .padding(.vertical, 4)
-                }
-                .listRowBackground(VoltColor.surface)
+    private var target: PlannedExercise {
+        WorkoutRecommendationEngine.target(
+            for: exercise.name,
+            muscleGroup: exercise.muscleGroup.rawValue,
+            isCompound: exercise.isLikelyCompound,
+            defaultSets: exercise.isLikelyCompound ? 4 : 3,
+            defaultReps: exercise.isLikelyCompound ? 6 : 10,
+            routineWeight: nil,
+            history: WorkoutRecommendationEngine.pastWorkouts(from: sessions),
+            settings: .fromPreferences()
+        )
+    }
 
-                if !exercise.imageURLs.isEmpty {
-                    Section {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 10) {
-                                ForEach(exercise.imageURLs, id: \.self) { url in
-                                    AsyncImage(url: url) { phase in
-                                        if let image = phase.image {
-                                            image.resizable().scaledToFill()
-                                        } else {
-                                            VoltColor.surfaceHigh
-                                        }
-                                    }
-                                    .frame(width: 220, height: 165)
-                                    .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm, style: .continuous))
-                                    .accessibilityHidden(true)
-                                }
+    var body: some View {
+        let plan = target
+        let weight = targetWeight ?? plan.weight
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: 44) {
+                header
+
+                if exercise.imageURLs.count >= 1 {
+                    ExerciseDemoView(urls: exercise.imageURLs, phases: phaseNames)
+                }
+
+                targetSection(plan: plan, weight: weight)
+
+                if !exercise.primaryMuscles.isEmpty {
+                    VStack(alignment: .leading, spacing: 14) {
+                        VoltSectionTitle("Muscles worked")
+                        MuscleMapView(primary: exercise.primaryMuscles, secondary: exercise.secondaryMuscles)
+                        HStack(spacing: 6) {
+                            legendTag("Primary · " + exercise.primaryMuscles.joined(separator: ", "), fill: VoltColor.accent, outlined: false)
+                            if !exercise.secondaryMuscles.isEmpty {
+                                legendTag("Secondary · " + exercise.secondaryMuscles.prefix(2).joined(separator: ", "), fill: VoltColor.accentDim, outlined: true)
                             }
                         }
-                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                     }
-                    .listRowBackground(VoltColor.surface)
+                }
+
+                if !exercise.instructionSteps.isEmpty {
+                    FormCuesView(steps: exercise.instructionSteps)
+                } else if !exercise.instructions.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VoltSectionTitle("How to do it")
+                        Text(exercise.instructions).font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+                    }
                 }
 
                 recordsSection
 
-                Section("Details") {
-                    detailRow("Muscle Group", value: exercise.muscleGroup.rawValue)
-                    detailRow("Equipment", value: exercise.equipment.rawValue)
-                    if !exercise.primaryMuscles.isEmpty {
-                        detailRow("Primary muscles", value: exercise.primaryMuscles.map(\.capitalized).joined(separator: ", "))
+                if let vm = workoutVM, vm.isActive {
+                    VoltButton(addedToWorkout ? "Added to \(vm.session?.title ?? "Workout")" : "Add to Current Workout") {
+                        guard !addedToWorkout else { return }
+                        vm.addExercise(exercise, context: modelContext)
+                        addedToWorkout = true
                     }
-                    if !exercise.secondaryMuscles.isEmpty {
-                        detailRow("Also works", value: exercise.secondaryMuscles.map(\.capitalized).joined(separator: ", "))
-                    }
-                    if !exercise.level.isEmpty { detailRow("Level", value: exercise.level.capitalized) }
-                    if !exercise.mechanic.isEmpty { detailRow("Type", value: exercise.mechanic.capitalized) }
-                    if exercise.isCustom { detailRow("Type", value: "Custom Exercise") }
-                }
-                .listRowBackground(VoltColor.surface)
-                .listRowSeparatorTint(VoltColor.border)
-
-                if !exercise.instructionSteps.isEmpty {
-                    Section("How to do it") {
-                        ForEach(Array(exercise.instructionSteps.enumerated()), id: \.offset) { index, step in
-                            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                                Text("\(index + 1)")
-                                    .font(VoltFont.mono(14, weight: .semibold))
-                                    .foregroundStyle(VoltColor.labelSecondary)
-                                    .frame(width: 18, alignment: .leading)
-                                Text(step)
-                                    .font(.subheadline)
-                                    .foregroundStyle(VoltColor.label)
-                                    .lineSpacing(3)
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-                    .listRowBackground(VoltColor.surface)
-                } else if !exercise.instructions.isEmpty {
-                    Section("Instructions") {
-                        Text(exercise.instructions)
-                            .font(.subheadline)
-                            .foregroundStyle(VoltColor.labelSecondary)
-                            .lineSpacing(4)
-                    }
-                    .listRowBackground(VoltColor.surface)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .listStyle(.insetGrouped)
+            .padding(.horizontal, VoltSpacing.gutter)
+            .padding(.top, VoltSpacing.sm)
+            .padding(.bottom, VoltSpacing.xxl)
         }
-        .navigationTitle(exercise.name)
+        .scrollIndicators(.hidden)
+        .background(VoltColor.bg)
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    // MARK: - Personal records
-    @ViewBuilder
-    private var recordsSection: some View {
-        let entries = history.filter { $0.set.weight > 0 && $0.set.reps > 0 }
-        Section("Personal Records") {
-            if let heaviest = entries.max(by: { $0.set.weight < $1.set.weight }),
-               let bestOneRep = entries.max(by: {
-                   PersonalRecords.estimatedOneRepMax(weight: $0.set.weight, reps: $0.set.reps)
-                       < PersonalRecords.estimatedOneRepMax(weight: $1.set.weight, reps: $1.set.reps)
-               }) {
-                recordRow(
-                    "Heaviest set",
-                    value: "\(heaviest.set.weight.formatted()) \(weightUnit) × \(heaviest.set.reps)",
-                    date: heaviest.date
-                )
-                recordRow(
-                    "Estimated 1-rep max",
-                    value: "\(PersonalRecords.estimatedOneRepMax(weight: bestOneRep.set.weight, reps: bestOneRep.set.reps).formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit)",
-                    date: bestOneRep.date
-                )
-                let workouts = Set(entries.map(\.date)).count
-                detailRow("Times logged", value: "\(workouts) \(workouts == 1 ? "workout" : "workouts")")
-            } else {
-                Text("Log this exercise in a workout to start tracking records.")
-                    .font(.subheadline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(exercise.muscleGroup.rawValue.uppercased())
+                    .font(VoltFont.mono(11)).tracking(0.9)
                     .foregroundStyle(VoltColor.labelSecondary)
             }
         }
-        .listRowBackground(VoltColor.surface)
-        .listRowSeparatorTint(VoltColor.border)
     }
 
-    private func recordRow(_ label: String, value: String, date: Date) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).foregroundStyle(VoltColor.labelSecondary).font(.subheadline)
-                Text(date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.caption)
-                    .foregroundStyle(VoltColor.labelTertiary)
-            }
-            Spacer()
-            Text(value)
-                .font(VoltFont.mono(15, weight: .semibold))
+    // MARK: Header
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(exercise.name)
+                .font(VoltFont.sans(40))
+                .tracking(-1.4)
                 .foregroundStyle(VoltColor.label)
+                .fixedSize(horizontal: false, vertical: true)
+            FlowTags(tags: [exercise.muscleGroup.rawValue, exercise.equipment.rawValue, exercise.mechanic.capitalized, exercise.level.capitalized]
+                .filter { !$0.isEmpty }, markFirst: true)
         }
     }
 
-    private func detailRow(_ label: String, value: String) -> some View {
-        HStack {
-            Text(label).foregroundStyle(VoltColor.labelSecondary).font(.subheadline)
-            Spacer()
-            Text(value).foregroundStyle(VoltColor.label).font(.subheadline.weight(.medium))
+    private var phaseNames: [String] {
+        switch exercise.force {
+        case "push": return ["Start · arms locked", "Lower · 3 s, controlled"]
+        case "pull": return ["Start · arms long", "Pull · 1 s, squeeze"]
+        default:     return ["Start position", "End position"]
+        }
+    }
+
+    // MARK: Today's target
+    private func targetSection(plan: PlannedExercise, weight: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VoltSectionTitle("Today's target · \(plan.sets) × \(plan.reps)")
+            HStack(alignment: .lastTextBaseline) {
+                HStack(alignment: .lastTextBaseline, spacing: 6) {
+                    Text(weight.map { $0.formatted() } ?? "—")
+                        .font(VoltFont.display(88))
+                        .tracking(-3.5)
+                        .contentTransition(.numericText())
+                    Text(weightUnit.uppercased()).font(VoltFont.mono(13)).foregroundStyle(VoltColor.labelSecondary)
+                }
+                Spacer()
+                if let weight {
+                    HStack(spacing: 6) {
+                        stepButton("−\(step.formatted())") { targetWeight = max(0, weight - step) }
+                        stepButton("+\(step.formatted())") { targetWeight = weight + step }
+                    }
+                }
+            }
+            .foregroundStyle(VoltColor.label)
+            .animation(.snappy, value: weight)
+
+            Text(plan.note)
+                .font(VoltFont.sans(15))
+                .foregroundStyle(VoltColor.labelSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if exercise.equipment == .barbell, let weight {
+                PlateCalculatorView(total: weight, unit: weightUnit)
+            }
+        }
+    }
+
+    private var step: Double { weightUnit == "lb" ? 5 : 2.5 }
+
+    private func stepButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(VoltFont.mono(13)).frame(width: 52, height: 40)
+                .overlay(Rectangle().strokeBorder(VoltColor.label, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: targetWeight)
+    }
+
+    private func legendTag(_ text: String, fill: Color, outlined: Bool) -> some View {
+        HStack(spacing: 6) {
+            Rectangle().fill(fill).frame(width: 8, height: 8)
+                .overlay(Rectangle().strokeBorder(VoltColor.accentText, lineWidth: outlined ? 0.5 : 0))
+            Text(text.uppercased()).font(VoltFont.mono(10)).tracking(0.6).lineLimit(1)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(VoltColor.surfaceHigh)
+        .foregroundStyle(VoltColor.labelSecondary)
+    }
+
+    // MARK: Records
+    @ViewBuilder
+    private var recordsSection: some View {
+        let entries = history.filter { $0.set.weight > 0 && $0.set.reps > 0 }
+        if let heaviest = entries.max(by: { $0.set.weight < $1.set.weight }) {
+            let best1RM = entries.map { PersonalRecords.estimatedOneRepMax(weight: $0.set.weight, reps: $0.set.reps) }.max() ?? 0
+            let sessionsLogged = Set(entries.map { $0.date }).count
+            // Heaviest set per session, oldest to newest, last 8
+            let tops = Dictionary(grouping: entries, by: { $0.date })
+                .map { (date: $0.key, top: $0.value.map { $0.set.weight }.max() ?? 0) }
+                .sorted { $0.date < $1.date }
+                .suffix(8)
+            VStack(alignment: .leading, spacing: 12) {
+                VoltSectionTitle("Your records")
+                SpecGrid(cells: [
+                    ("Heaviest", heaviest.set.weight.formatted(), "× \(heaviest.set.reps)"),
+                    ("Est. 1RM", best1RM.formatted(.number.precision(.fractionLength(0))), weightUnit.uppercased()),
+                    ("Logged", "\(sessionsLogged)", "×"),
+                ])
+                if tops.count >= 2 {
+                    let lo = (tops.map(\.top).min() ?? 0) * 0.9, hi = tops.map(\.top).max() ?? 1
+                    HStack(alignment: .bottom, spacing: 6) {
+                        ForEach(Array(tops.enumerated()), id: \.offset) { index, item in
+                            Rectangle()
+                                .fill(index == tops.count - 1 ? VoltColor.accent : VoltColor.bar)
+                                .frame(height: max(4, 88 * (item.top - lo) / max(1, hi - lo)))
+                        }
+                    }
+                    .frame(height: 92, alignment: .bottom)
+                    .overlay(alignment: .bottom) { Rectangle().fill(VoltColor.label).frame(height: 1) }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Top set over the last \(tops.count) sessions, from \(tops.first!.top.formatted()) to \(tops.last!.top.formatted()) \(weightUnit)")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Movement demo: start and end photos crossfading at tempo
+struct ExerciseDemoView: View {
+    let urls: [URL]
+    let phases: [String]
+    @State private var frame = 0
+    @State private var playing = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let timer = Timer.publish(every: 1.8, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack(alignment: .topLeading) {
+                VoltColor.surfaceHigh
+                ForEach(Array(urls.prefix(2).enumerated()), id: \.offset) { index, url in
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image { image.resizable().scaledToFill() } else { Color.clear }
+                    }
+                    .grayscale(1)
+                    .opacity(index == frame ? 1 : 0)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.7), value: frame)
+                }
+                Text(String(format: "%02d · %@", frame + 1, frame == 0 ? "START" : "END"))
+                    .font(VoltFont.mono(10)).tracking(0.8)
+                    .padding(.horizontal, 7).padding(.vertical, 5)
+                    .background(VoltColor.bg).foregroundStyle(VoltColor.label)
+                    .padding(10)
+            }
+            .aspectRatio(3 / 2, contentMode: .fit)
+            .clipped()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(phases[min(frame, phases.count - 1)])
+
+            HStack(spacing: 12) {
+                Button { playing.toggle() } label: {
+                    Image(systemName: playing ? "pause.fill" : "play.fill")
+                        .font(.system(size: 10))
+                        .frame(width: 28, height: 28)
+                        .overlay(Rectangle().strokeBorder(VoltColor.onInk, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(playing ? "Pause demo" : "Play demo")
+                Text(phases[min(frame, phases.count - 1)].uppercased())
+                Spacer()
+                Text("TEMPO 3·1·1").opacity(0.65)
+            }
+            .font(VoltFont.mono(11)).tracking(0.6)
+            .foregroundStyle(VoltColor.onInk)
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(VoltColor.ink)
+
+            if urls.count >= 2 {
+                HStack(spacing: 1) {
+                    positionButton(0, "01 · START")
+                    positionButton(1, "02 · END")
+                }
+                .padding(1).background(VoltColor.border)
+            }
+        }
+        .onReceive(timer) { _ in
+            guard playing, urls.count >= 2, !reduceMotion else { return }
+            frame = frame == 0 ? 1 : 0
+        }
+    }
+
+    private func positionButton(_ index: Int, _ title: String) -> some View {
+        Button { frame = index; playing = false } label: {
+            Text(title).font(VoltFont.mono(11)).tracking(0.8)
+                .frame(maxWidth: .infinity, minHeight: 40)
+                .background(frame == index ? VoltColor.ink : VoltColor.bg)
+                .foregroundStyle(frame == index ? VoltColor.onInk : VoltColor.labelSecondary)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Plates per side, drawn to scale
+struct PlateCalculatorView: View {
+    let total: Double
+    let unit: String
+
+    private var bar: Double { unit == "lb" ? 45 : 20 }
+    private var sizes: [Double] { unit == "lb" ? [45, 35, 25, 10, 5, 2.5] : [25, 20, 15, 10, 5, 2.5, 1.25] }
+
+    private var plates: [Double] {
+        var side = max(0, (total - bar) / 2)
+        var result: [Double] = []
+        for size in sizes {
+            while side >= size - 0.001 { side -= size; result.append(size) }
+        }
+        return result
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 3) {
+                Rectangle().fill(VoltColor.labelSecondary).frame(width: 70, height: 6)
+                Rectangle().fill(VoltColor.label).frame(width: 10, height: 12)
+                ForEach(Array(plates.enumerated()), id: \.offset) { _, plate in
+                    let smallest = plate == sizes.last
+                    Rectangle()
+                        .fill(smallest ? VoltColor.accent : VoltColor.ink)
+                        .frame(width: max(5, 16 * min(1, plate / sizes[0]) + 4), height: 28 + 64 * min(1, plate / sizes[0]))
+                }
+                Rectangle().fill(VoltColor.labelSecondary).frame(width: 34, height: 6)
+            }
+            .frame(height: 100)
+            .animation(.snappy, value: plates)
+            Text("EACH SIDE: \(plates.isEmpty ? "EMPTY BAR" : plates.map { $0.formatted() }.joined(separator: " + ")) · BAR \(bar.formatted()) \(unit.uppercased())")
+                .font(VoltFont.mono(11)).tracking(0.6)
+                .foregroundStyle(VoltColor.labelSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Numbered form cues you can step through
+struct FormCuesView: View {
+    let steps: [String]
+    @State private var current = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VoltSectionTitle("How to do it")
+                Spacer()
+                Text("\(current + 1) OF \(steps.count)").font(VoltFont.mono(11)).tracking(0.9).foregroundStyle(VoltColor.labelSecondary)
+            }
+            VStack(spacing: 0) {
+                Rectangle().fill(VoltColor.label).frame(height: 1)
+                ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                    Button { withAnimation(.easeOut(duration: 0.2)) { current = index } } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Text(String(format: "%02d", index + 1))
+                                .font(VoltFont.mono(12)).foregroundStyle(VoltColor.accentText)
+                                .frame(width: 28, alignment: .leading)
+                            Text(step)
+                                .font(VoltFont.sans(17))
+                                .foregroundStyle(index == current ? VoltColor.label : VoltColor.labelTertiary)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 16)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    Rectangle().fill(VoltColor.border).frame(height: 1)
+                }
+            }
+            HStack(spacing: 8) {
+                stepButton("← PREVIOUS") { current = max(0, current - 1) }
+                stepButton("NEXT →") { current = min(steps.count - 1, current + 1) }
+            }
+        }
+    }
+
+    private func stepButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button { withAnimation(.easeOut(duration: 0.2)) { action() } } label: {
+            Text(title).font(VoltFont.mono(11)).tracking(0.8)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .overlay(Rectangle().strokeBorder(VoltColor.label, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Geometric muscle map, front and back
+struct MuscleMapView: View {
+    let primary: [String]
+    let secondary: [String]
+
+    private struct Region { let rect: CGRect; let radius: CGFloat; let muscles: [String] }
+    private static func r(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ rad: CGFloat, _ m: [String]) -> Region {
+        Region(rect: CGRect(x: x, y: y, width: w, height: h), radius: rad, muscles: m)
+    }
+    // Same geometry as the design system (viewBox 120 × 232)
+    private static let front: [Region] = [
+        r(49, 6, 22, 22, 11, []), r(55, 29, 10, 7, 2, ["neck"]),
+        r(26, 37, 16, 16, 8, ["shoulders"]), r(78, 37, 16, 16, 8, ["shoulders"]),
+        r(42, 38, 17, 22, 4, ["chest"]), r(61, 38, 17, 22, 4, ["chest"]),
+        r(24, 55, 13, 30, 6, ["biceps"]), r(83, 55, 13, 30, 6, ["biceps"]),
+        r(20, 88, 12, 34, 5, ["forearms"]), r(88, 88, 12, 34, 5, ["forearms"]),
+        r(48, 63, 11, 12, 2, ["abdominals"]), r(61, 63, 11, 12, 2, ["abdominals"]),
+        r(48, 77, 11, 12, 2, ["abdominals"]), r(61, 77, 11, 12, 2, ["abdominals"]),
+        r(48, 91, 11, 12, 2, ["abdominals"]), r(61, 91, 11, 12, 2, ["abdominals"]),
+        r(41, 64, 5, 36, 2, ["abdominals"]), r(74, 64, 5, 36, 2, ["abdominals"]),
+        r(43, 106, 34, 12, 4, ["adductors", "abductors"]),
+        r(42, 121, 17, 52, 8, ["quadriceps"]), r(61, 121, 17, 52, 8, ["quadriceps"]),
+        r(44, 180, 13, 46, 6, ["calves"]), r(63, 180, 13, 46, 6, ["calves"]),
+    ]
+    private static let back: [Region] = [
+        r(49, 6, 22, 22, 11, []), r(45, 29, 30, 14, 6, ["traps", "neck"]),
+        r(26, 37, 16, 16, 8, ["shoulders"]), r(78, 37, 16, 16, 8, ["shoulders"]),
+        r(40, 46, 11, 40, 5, ["lats"]), r(69, 46, 11, 40, 5, ["lats"]),
+        r(53, 46, 14, 30, 3, ["middle back"]), r(50, 79, 20, 22, 3, ["lower back"]),
+        r(24, 55, 13, 30, 6, ["triceps"]), r(83, 55, 13, 30, 6, ["triceps"]),
+        r(20, 88, 12, 34, 5, ["forearms"]), r(88, 88, 12, 34, 5, ["forearms"]),
+        r(42, 104, 17, 20, 8, ["glutes", "abductors"]), r(61, 104, 17, 20, 8, ["glutes", "abductors"]),
+        r(42, 127, 17, 46, 8, ["hamstrings", "adductors"]), r(61, 127, 17, 46, 8, ["hamstrings", "adductors"]),
+        r(43, 178, 15, 48, 7, ["calves"]), r(62, 178, 15, 48, 7, ["calves"]),
+    ]
+
+    var body: some View {
+        HStack(spacing: 1) {
+            figure(Self.front, label: "Front")
+            figure(Self.back, label: "Back")
+        }
+        .padding(1)
+        .background(VoltColor.border)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Primary: \(primary.joined(separator: ", ")). Secondary: \(secondary.isEmpty ? "none" : secondary.joined(separator: ", ")).")
+    }
+
+    private func figure(_ regions: [Region], label: String) -> some View {
+        VStack(spacing: 8) {
+            Canvas { context, size in
+                let scale = min(size.width / 120, size.height / 232)
+                let dx = (size.width - 120 * scale) / 2
+                for region in regions {
+                    let rect = CGRect(x: dx + region.rect.minX * scale, y: region.rect.minY * scale,
+                                      width: region.rect.width * scale, height: region.rect.height * scale)
+                    let path = Path(roundedRect: rect, cornerRadius: region.radius * scale)
+                    let isPrimary = !Set(region.muscles).isDisjoint(with: primary)
+                    let isSecondary = !isPrimary && !Set(region.muscles).isDisjoint(with: secondary)
+                    context.fill(path, with: .color(isPrimary ? VoltColor.accent : isSecondary ? VoltColor.accentDim : VoltColor.surfaceHigh))
+                    if isSecondary { context.stroke(path, with: .color(VoltColor.accentText), lineWidth: 0.6 * scale) }
+                }
+            }
+            .frame(height: 260)
+            Text(label.uppercased()).font(VoltFont.mono(10)).tracking(0.8).foregroundStyle(VoltColor.labelSecondary)
+        }
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .background(VoltColor.bg)
+    }
+}
+
+// MARK: - Spec grid: hard cells with hairline gaps
+struct SpecGrid: View {
+    let cells: [(label: String, value: String, unit: String)]
+
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 3), spacing: 1) {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(cell.label.uppercased()).font(VoltFont.mono(10)).tracking(0.8).foregroundStyle(VoltColor.labelSecondary)
+                    HStack(alignment: .lastTextBaseline, spacing: 3) {
+                        Text(cell.value).font(VoltFont.display(28)).tracking(-0.9).foregroundStyle(VoltColor.label)
+                        Text(cell.unit).font(VoltFont.mono(11)).foregroundStyle(VoltColor.labelSecondary)
+                    }
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoltColor.bg)
+            }
+        }
+        .padding(1)
+        .background(VoltColor.border)
+    }
+}
+
+// MARK: - Uppercase mono tags that wrap
+struct FlowTags: View {
+    let tags: [String]
+    var markFirst = false
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) { content }
+            VStack(alignment: .leading, spacing: 6) { content }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        ForEach(Array(tags.enumerated()), id: \.offset) { index, tag in
+            HStack(spacing: 6) {
+                if markFirst && index == 0 { Rectangle().fill(VoltColor.accent).frame(width: 6, height: 6) }
+                Text(tag.uppercased()).font(VoltFont.mono(11)).tracking(0.6)
+            }
+            .padding(.horizontal, 8).padding(.vertical, 6)
+            .background(VoltColor.surfaceHigh)
+            .foregroundStyle(VoltColor.labelSecondary)
         }
     }
 }

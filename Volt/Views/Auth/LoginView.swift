@@ -33,11 +33,11 @@ struct LoginView: View {
                                 .fill(VoltGradient.brand)
                                 .frame(width: 80, height: 80)
                             Image(systemName: "bolt.fill")
-                                .font(.system(size: 36, weight: .bold))
+                                .font(VoltFont.sans(36, weight: .medium))
                                 .foregroundStyle(VoltColor.onInk)
                         }
                         Text("Volt")
-                            .font(.system(size: 34, weight: .black))
+                            .font(VoltFont.sans(34, weight: .regular))
                             .foregroundStyle(VoltColor.label)
                         Text("Performance, tracked.")
                             .font(.subheadline)
@@ -162,10 +162,10 @@ struct LoginView: View {
                                 ProgressView().tint(VoltColor.label)
                             } else {
                                 Image(systemName: "globe")
-                                    .font(.system(size: 18, weight: .medium))
+                                    .font(VoltFont.sans(18, weight: .regular))
                                     .foregroundStyle(VoltColor.label)
                                 Text("Sign in with Google")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(VoltFont.sans(16, weight: .medium))
                                     .foregroundStyle(VoltColor.label)
                             }
                         }
@@ -212,7 +212,7 @@ struct LoginView: View {
     ) -> some View {
         HStack(spacing: VoltSpacing.sm) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
+                .font(VoltFont.sans(16, weight: .regular))
                 .foregroundStyle(focusedField == field ? VoltColor.accent : VoltColor.labelTertiary)
                 .frame(width: 22)
 

@@ -79,12 +79,12 @@ struct ActiveWorkoutView: View {
                     if completedSetCount == 0 { showingNothingToSave = true } else { showingFinish = true }
                 } label: {
                     Text("Finish")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(VoltFont.sans(15, weight: .medium))
                         .foregroundStyle(VoltColor.onSuccess)
                         .padding(.horizontal, 18)
                         .frame(height: 36)
                         .background(VoltColor.success)
-                        .clipShape(Capsule())
+                        .clipShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -98,10 +98,10 @@ struct ActiveWorkoutView: View {
                     set: { newTitle in if let session = vm.session { session.title = newTitle } }
                 ))
                 .multilineTextAlignment(.center)
-                .font(.system(size: 15, weight: .medium))
+                .font(VoltFont.sans(15, weight: .regular))
                 .foregroundStyle(VoltColor.labelSecondary)
                 Text(vm.formattedElapsed)
-                    .font(.system(size: 52, weight: .light).monospacedDigit())
+                    .font(VoltFont.display(52))
                     .tracking(-1)
                     .foregroundStyle(VoltColor.label)
                     .contentTransition(.numericText())
@@ -127,10 +127,10 @@ struct ActiveWorkoutView: View {
     private func stat(value: String, label: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 20, weight: .regular).monospacedDigit())
+                .font(VoltFont.display(20))
                 .foregroundStyle(VoltColor.label)
             Text(label)
-                .font(.system(size: 12))
+                .font(VoltFont.sans(12))
                 .foregroundStyle(VoltColor.labelSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -141,10 +141,10 @@ struct ActiveWorkoutView: View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
                 Text("Rest")
-                    .font(.system(size: 13))
+                    .font(VoltFont.sans(13))
                     .opacity(0.7)
                 Text(vm.formattedRest)
-                    .font(.system(size: 30, weight: .light).monospacedDigit())
+                    .font(VoltFont.display(30))
                     .contentTransition(.numericText(countsDown: true))
                 Spacer()
                 restButton("−15") { vm.adjustRestTimer(by: -15) }
@@ -153,13 +153,13 @@ struct ActiveWorkoutView: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(VoltColor.onInk.opacity(0.18))
-                    Capsule().fill(VoltColor.onInk)
+                    Rectangle().fill(VoltColor.onInk.opacity(0.22))
+                    Rectangle().fill(VoltColor.accent)
                         .frame(width: geo.size.width * vm.restProgress)
                         .animation(.linear(duration: 1), value: vm.restProgress)
                 }
             }
-            .frame(height: 4)
+            .frame(height: 2)
         }
         .foregroundStyle(VoltColor.onInk)
         .padding(.horizontal, VoltSpacing.md)
@@ -173,11 +173,11 @@ struct ActiveWorkoutView: View {
 
     private func restButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
-            .font(.system(size: 14, weight: .semibold))
+            .font(VoltFont.sans(14, weight: .medium))
             .padding(.horizontal, 12)
             .frame(height: 34)
             .background(VoltColor.onInk.opacity(0.14))
-            .clipShape(Capsule())
+            .clipShape(Rectangle())
             .buttonStyle(.plain)
     }
 
@@ -187,12 +187,12 @@ struct ActiveWorkoutView: View {
             Image(systemName: "trophy.fill")
             Text(message).lineLimit(1)
         }
-        .font(.system(size: 14, weight: .semibold))
+        .font(VoltFont.sans(14, weight: .medium))
         .foregroundStyle(VoltColor.onInk)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(VoltColor.ink)
-        .clipShape(Capsule())
+        .clipShape(Rectangle())
         .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
         .padding(.horizontal, VoltSpacing.gutter)
     }
@@ -210,7 +210,7 @@ struct ActiveWorkoutView: View {
                 }
 
                 Button("Discard Workout") { showingDiscard = true }
-                    .font(.system(size: 15, weight: .medium))
+                    .font(VoltFont.sans(15, weight: .regular))
                     .foregroundStyle(VoltColor.danger)
                     .frame(height: 44)
             }
@@ -249,11 +249,11 @@ struct ExerciseLogCard: View {
             // Exercise header
             HStack(spacing: VoltSpacing.sm) {
                 Text(log.exerciseName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(VoltFont.sans(16, weight: .medium))
                     .foregroundStyle(VoltColor.label)
                 Spacer()
                 Text(log.exerciseMuscleGroup)
-                    .font(.system(size: 13))
+                    .font(VoltFont.sans(13))
                     .foregroundStyle(VoltColor.labelTertiary)
                 VoltIconButton(icon: "ellipsis", action: { showingRemove = true })
                     .accessibilityLabel("Exercise options")
@@ -270,7 +270,7 @@ struct ExerciseLogCard: View {
                 Text("REPS").frame(width: 56)
                 Image(systemName: "checkmark").frame(width: 38)
             }
-            .font(.system(size: 11, weight: .semibold))
+            .font(VoltFont.sans(11, weight: .medium))
             .tracking(0.4)
             .foregroundStyle(VoltColor.labelTertiary)
             .padding(.horizontal, 12)
@@ -297,7 +297,7 @@ struct ExerciseLogCard: View {
             // Add set
             Button { vm.addSet(to: log, context: modelContext) } label: {
                 Text("+ Add Set")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(VoltFont.sans(14, weight: .regular))
                     .foregroundStyle(VoltColor.labelSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -333,7 +333,7 @@ struct SetRow: View {
             Group {
                 if isRecord {
                     Image(systemName: "trophy.fill")
-                        .font(.system(size: 13))
+                        .font(VoltFont.sans(13))
                         .foregroundStyle(VoltColor.accent)
                         .accessibilityLabel("Set \(setNumber), personal record")
                 } else {
@@ -374,7 +374,7 @@ struct SetRow: View {
             // Complete toggle
             Button { vm.toggleSetComplete(set, context: modelContext) } label: {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(VoltFont.sans(14, weight: .medium))
                     .foregroundStyle(set.isCompleted ? VoltColor.onSuccess : VoltColor.labelTertiary)
                     .frame(width: 38, height: 36)
                     .background(set.isCompleted ? VoltColor.success : VoltColor.surfaceHigh)
@@ -429,7 +429,7 @@ struct ExercisePickerSheet: View {
                     if exercises.isEmpty {
                         VStack(spacing: VoltSpacing.md) {
                             Image(systemName: "dumbbell.fill")
-                                .font(.system(size: 40))
+                                .font(VoltFont.sans(40))
                                 .foregroundStyle(VoltColor.labelTertiary)
                             Text("Exercise library is empty")
                                 .font(.headline)
@@ -444,7 +444,7 @@ struct ExercisePickerSheet: View {
                     } else if filtered.isEmpty {
                         VStack(spacing: VoltSpacing.md) {
                             Image(systemName: "magnifyingglass")
-                                .font(.system(size: 32))
+                                .font(VoltFont.sans(32))
                                 .foregroundStyle(VoltColor.labelTertiary)
                             Text("No exercises found")
                                 .font(.headline)
@@ -466,7 +466,7 @@ struct ExercisePickerSheet: View {
                                             .fill(VoltColor.muscle(exercise.muscleGroup).opacity(0.12))
                                             .frame(width: 36, height: 36)
                                         Image(systemName: exercise.icon)
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(VoltFont.sans(14, weight: .regular))
                                             .foregroundStyle(VoltColor.muscle(exercise.muscleGroup))
                                     }
                                     VStack(alignment: .leading, spacing: 4) {

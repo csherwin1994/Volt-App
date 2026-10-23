@@ -14,13 +14,13 @@ struct EmptyStateView: View {
                     .fill(VoltColor.surfaceHigh)
                     .frame(width: 72, height: 72)
                 Image(systemName: icon)
-                    .font(.system(size: 28, weight: .regular))
+                    .font(VoltFont.sans(28, weight: .regular))
                     .foregroundStyle(VoltColor.labelSecondary)
             }
 
             VStack(spacing: VoltSpacing.xs) {
                 Text(title)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(VoltFont.sans(18, weight: .medium))
                     .foregroundStyle(VoltColor.label)
                 Text(message)
                     .font(.subheadline)

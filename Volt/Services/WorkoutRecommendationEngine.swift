@@ -382,14 +382,9 @@ extension WorkoutRecommendationEngine {
     /// Categories the generator draws from. Stretches, cardio and skill-heavy lifts are left to the user to add.
     static let generatorCategories: Set<String> = ["strength", "powerlifting"]
 
-    static func recommend(
-        sessions: [WorkoutSession],
-        routines: [Routine],
-        library: [Exercise],
-        settings: Recommender.Settings = .init(),
-        now: Date = Date()
-    ) -> WorkoutRecommendation {
-        let history = sessions.filter { $0.endDate != nil }.map { session in
+    /// Finished sessions as plain values, keeping only exercises with completed sets.
+    static func pastWorkouts(from sessions: [WorkoutSession]) -> [Recommender.PastWorkout] {
+        sessions.filter { $0.endDate != nil }.map { session in
             Recommender.PastWorkout(
                 date: session.startDate,
                 title: session.title,
@@ -401,7 +396,17 @@ extension WorkoutRecommendationEngine {
                     )
                 }.filter { !$0.sets.isEmpty }
             )
-        }
+        }.sorted { $0.date > $1.date }
+    }
+
+    static func recommend(
+        sessions: [WorkoutSession],
+        routines: [Routine],
+        library: [Exercise],
+        settings: Recommender.Settings = .init(),
+        now: Date = Date()
+    ) -> WorkoutRecommendation {
+        let history = pastWorkouts(from: sessions)
         let templates = routines.map { routine in
             Recommender.RoutineTemplate(
                 name: routine.name,

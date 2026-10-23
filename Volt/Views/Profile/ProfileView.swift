@@ -68,7 +68,7 @@ struct ProfileView: View {
                         .fill(VoltGradient.brand)
                         .frame(width: 68, height: 68)
                     Text(username.prefix(1).uppercased())
-                        .font(.system(size: 28, weight: .bold))
+                        .font(VoltFont.sans(28, weight: .medium))
                         .foregroundStyle(VoltColor.onInk)
                 }
                 VStack(alignment: .leading, spacing: 6) {
@@ -149,6 +149,14 @@ struct ProfileView: View {
                 Text("Pounds (lb)").tag("lb")
             }
             .foregroundStyle(VoltColor.label)
+            .listRowBackground(VoltColor.surface)
+            .listRowSeparatorTint(VoltColor.border)
+
+            HStack {
+                Text("Appearance").foregroundStyle(VoltColor.label)
+                Spacer()
+                AppearanceToggle()
+            }
             .listRowBackground(VoltColor.surface)
             .listRowSeparatorTint(VoltColor.border)
 
@@ -259,15 +267,15 @@ struct ProfileStatCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(VoltFont.sans(18, weight: .medium))
                         .foregroundStyle(color)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(VoltFont.sans(10, weight: .medium))
                         .foregroundStyle(color.opacity(0.5))
                 }
                 Text(value)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .font(VoltFont.sans(22, weight: .medium))
                     .foregroundStyle(VoltColor.label)
                 Text(label)
                     .font(.caption)

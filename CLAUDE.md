@@ -14,6 +14,8 @@ The look of the app is edited visually in two Claude artifacts and kept in sync 
 | Volt App Screens design canvas (every screen, light and dark) | https://claude.ai/artifact/4n7REycPfzr8ffqi62PTuT |
 | Clickable web prototype | `prototype/volt-prototype.html` |
 
+Design direction: **Nordic Precision** (paper, graphite, one Performance Gold signal; Schibsted Grotesk + Geist Mono; square corners). The design system's README is the full guide.
+
 Token names are identical everywhere: `surfaceHigh` in the artifacts is `VoltColor.surfaceHigh` in Swift.
 
 ### When a colour, spacing or radius is changed in the Design System artifact
@@ -30,6 +32,7 @@ Read the changed `project/<Screen>.dc.html` artboard and apply the change to the
 | --- | --- |
 | `Main.dc.html` (Train) | `Volt/Views/Workout/WorkoutTabView.swift` |
 | `Workout.dc.html` | `Volt/Views/Workout/ActiveWorkoutView.swift` |
+| `Exercise.dc.html` (the interactive template every exercise uses) | `ExerciseDetailView` and its parts in `Volt/Views/Exercises/ExerciseLibraryView.swift` |
 | `History.dc.html` | `Volt/Views/History/HistoryView.swift` |
 | `Progress.dc.html` | `Volt/Views/Progress/ProgressView.swift` |
 | `Library.dc.html` | `Volt/Views/Exercises/ExerciseLibraryView.swift`, `Volt/Views/Routines/RoutinesView.swift` |

@@ -23,13 +23,13 @@ struct WelcomeView: View {
                             .fill(VoltGradient.brand)
                             .frame(width: 96, height: 96)
                         Image(systemName: "bolt.fill")
-                            .font(.system(size: 44, weight: .bold))
+                            .font(VoltFont.sans(44, weight: .medium))
                             .foregroundStyle(VoltColor.onInk)
                     }
 
                     VStack(spacing: 6) {
                         Text("Welcome to Volt")
-                            .font(.system(size: 32, weight: .black))
+                            .font(VoltFont.sans(32, weight: .regular))
                             .foregroundStyle(VoltColor.label)
                         Text("Your personal training companion")
                             .font(.subheadline)
@@ -56,7 +56,7 @@ struct WelcomeView: View {
                     }
                 } label: {
                     Text("Get Started")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(VoltFont.sans(17, weight: .medium))
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
                         .background(VoltGradient.brand)
@@ -82,7 +82,7 @@ private struct FeatureRow: View {
                     .fill(VoltColor.accent.opacity(0.12))
                     .frame(width: 48, height: 48)
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(VoltFont.sans(20, weight: .medium))
                     .foregroundStyle(VoltColor.accent)
             }
 

@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 REPO_TOKENS = ROOT / "design" / "tokens.json"
 
 SANS = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", system-ui, sans-serif'
-LINE_HEIGHTS = {"display": 52, "largeTitle": 40, "title": 28, "body": 22, "callout": 20, "sectionTitle": 18, "caption": 16, "number": 20}
+LINE_HEIGHTS = {"display": 84, "largeTitle": 42, "title": 32, "body": 24, "callout": 22, "sectionTitle": 16, "caption": 16, "number": 22}
 WEIGHTS = {"light": 300, "regular": 400, "medium": 500, "semibold": 600, "bold": 700}
 WEIGHT_NAMES = {v: k for k, v in WEIGHTS.items()}
 SPACING_USE = {
@@ -35,13 +35,13 @@ SPACING_USE = {
     "lg": "Padding around empty states.",
     "xl": "Large empty-state padding.",
     "xxl": "Bottom padding under a scrolling screen.",
-    "gutter": "Left and right screen margin on every tab.",
+    "gutter": "Left and right screen margin on every tab. Sections are 48 apart (xxl).",
 }
 RADIUS_USE = {
-    "radiusXs": "Weight and reps input fields.",
-    "radiusSm": "The set tick and other small square controls. Buttons are capsules, not this.",
-    "radius": "The set table, sheets and any surface that must be set apart.",
-    "radiusLg": "The floating rest timer.",
+    "radiusXs": "Input fields: a 2px softening so they don't read as cut paper.",
+    "radiusSm": "The set tick and other small controls.",
+    "radius": "Buttons, cards, the set table, sheets: square, like a spec sheet.",
+    "radiusLg": "The floating rest bar: square too.",
 }
 
 
@@ -54,25 +54,32 @@ def to_design_system(repo):
         {"name": name, "value": {"light": c["light"].lower(), "dark": c["dark"].lower()}, "usage": c["use"]}
         for name, c in repo["color"].items()
     ]
-    styles = []
-    for name, s in repo["type"].items():
+    groups = OrderedDict()
+    for name, st in repo["type"].items():
         if name.startswith("$"):
             continue
-        styles.append({
+        family = st.get("family", "sans")
+        style = {
             "name": name,
-            "fontSize": f'{s["size"]}px',
-            "lineHeight": f'{LINE_HEIGHTS.get(name, round(s["size"] * 1.35))}px',
-            "fontWeight": WEIGHTS[s["weight"]],
-            "usage": s["use"],
-        })
+            "fontSize": f'{st["size"]}px',
+            "lineHeight": f'{LINE_HEIGHTS.get(name, round(st["size"] * 1.35))}px',
+            "fontWeight": WEIGHTS[st["weight"]],
+            "usage": st["use"],
+        }
+        if st.get("tracking"):
+            style["letterSpacing"] = f'{st["tracking"]}px'
+        groups.setdefault(family, []).append(style)
+    fonts = repo.get("fonts", {})
+    families = {key: f["stack"] for key, f in fonts.items()} or {"sans": SANS}
+    group_names = {"sans": "Words", "mono": "Data"}
     return OrderedDict([
         ("name", "Volt"),
         ("version", 1),
         ("color", {"themes": [{"id": "light", "name": "Light"}, {"id": "dark", "name": "Dark"}], "tokens": colors}),
         ("type", {
             "fonts": [],
-            "families": {"sans": SANS},
-            "groups": [{"name": "Text", "family": "sans", "styles": styles}],
+            "families": families,
+            "groups": [{"name": group_names.get(f, f.title()), "family": f, "styles": st} for f, st in groups.items()],
         }),
         ("spacing", {"tokens": [{"name": k, "value": f"{v}px", "usage": SPACING_USE.get(k, "")} for k, v in repo["spacing"].items()]}),
         ("radius", {"tokens": [{"name": k, "value": f"{v}px", "usage": RADIUS_USE.get(k, "")} for k, v in repo["radius"].items()]}),
@@ -98,9 +105,10 @@ def to_css(ds, title="Volt"):
     lines.append("}")
     for g in ds["type"]["groups"]:
         for s in g["styles"]:
+            tracking = f' letter-spacing: {s["letterSpacing"]};' if s.get("letterSpacing") else ""
             lines.append(
                 f'.{s["name"]} {{ font-family: var(--font-{g["family"]}); font-size: {s["fontSize"]}; '
-                f'line-height: {s["lineHeight"]}; font-weight: {s["fontWeight"]}; }}'
+                f'line-height: {s["lineHeight"]}; font-weight: {s["fontWeight"]};{tracking} }}'
             )
     return "\n".join(lines) + "\n"
 

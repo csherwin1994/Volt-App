@@ -77,11 +77,11 @@ struct WeeklyVolumeChart: View {
                         AxisGridLine().foregroundStyle(VoltColor.border)
                         AxisValueLabel()
                             .foregroundStyle(VoltColor.labelTertiary)
-                            .font(.system(size: 10))
+                            .font(VoltFont.sans(10))
                     }
                 }
                 .chartXAxis {
-                    AxisMarks { AxisValueLabel().foregroundStyle(VoltColor.labelTertiary).font(.system(size: 10)) }
+                    AxisMarks { AxisValueLabel().foregroundStyle(VoltColor.labelTertiary).font(VoltFont.sans(10)) }
                 }
                 .frame(height: 160)
                 .padding(VoltSpacing.md)
@@ -129,10 +129,10 @@ struct FrequencyHeatmap: View {
             }
             HStack {
                 Circle().fill(VoltColor.surfaceHigh).frame(width: 8, height: 8)
-                Text("Rest").font(.system(size: 10)).foregroundStyle(VoltColor.labelTertiary)
+                Text("Rest").font(VoltFont.sans(10)).foregroundStyle(VoltColor.labelTertiary)
                 Spacer()
                 Circle().fill(VoltColor.accent.opacity(0.6)).frame(width: 8, height: 8)
-                Text("Trained").font(.system(size: 10)).foregroundStyle(VoltColor.labelTertiary)
+                Text("Trained").font(VoltFont.sans(10)).foregroundStyle(VoltColor.labelTertiary)
             }
         }
         .padding(VoltSpacing.md)
@@ -229,14 +229,14 @@ struct ExerciseProgressChart: View {
                                 AxisGridLine().foregroundStyle(VoltColor.border)
                                 AxisValueLabel()
                                     .foregroundStyle(VoltColor.labelTertiary)
-                                    .font(.system(size: 10))
+                                    .font(VoltFont.sans(10))
                             }
                         }
                         .chartXAxis {
                             AxisMarks(values: .stride(by: .day, count: max(1, points.count / 4))) {
                                 AxisValueLabel(format: .dateTime.month(.abbreviated).day())
                                     .foregroundStyle(VoltColor.labelTertiary)
-                                    .font(.system(size: 10))
+                                    .font(VoltFont.sans(10))
                             }
                         }
                         .frame(height: 160)
@@ -255,7 +255,7 @@ struct ExerciseProgressChart: View {
 private func emptyChart(message: String) -> some View {
     VStack(spacing: VoltSpacing.md) {
         Image(systemName: "chart.line.uptrend.xyaxis")
-            .font(.system(size: 32))
+            .font(VoltFont.sans(32))
             .foregroundStyle(VoltColor.labelTertiary)
         Text(message)
             .font(.subheadline)

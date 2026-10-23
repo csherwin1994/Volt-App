@@ -63,15 +63,17 @@ Volt/
 
 ## Design
 
-The app uses a clean, minimal look that follows the system light or dark mode:
+Volt's look is **Nordic Precision**, drawn from Scandinavian design leaders: Polestar's single typeface and huge, tightly set numerals, Teenage Engineering's monospaced labels and spec-sheet grids, and Oura's calm, warm data.
 
-- Quiet grey background with plain white (or dark grey) cards, no borders or gradients
-- Black primary buttons in light mode (white in dark mode) and one blue accent for live state: timers, links and chart highlights
-- Five tabs: **Train**, **History**, **Progress**, **Library** (exercises and routines) and **Profile**
+- **Palette:** paper and graphite, with one signal colour, *Performance Gold*, which means achievement (a done set, Finish, a PR, a trained day). Photos are shown in greyscale.
+- **Type:** [Schibsted Grotesk](https://github.com/schibsted/schibsted-grotesk) for words and numerals, [Geist Mono](https://github.com/vercel/geist-font) for data and labels. Both are SIL Open Font License fonts bundled in `Volt/Resources/Fonts` and registered at launch.
+- **Shape:** square corners, 1px hairline rules, buttons with the label on the left and an arrow on the right.
+- **Appearance:** Light, Dark or Auto, switched at the top of Train or in Profile.
+- **Exercise page:** every exercise uses one interactive template: a movement demo crossfading at tempo, today's target with a plate calculator, a muscle map, step-through form cues and your records.
 
-All colours live in `Volt/Theme/AppTheme.swift` as light/dark pairs, so the look can be changed in one place.
+All colours live in `design/tokens.json` and are generated into `Volt/Theme/AppTheme.swift`; see `CLAUDE.md` for the design workflow.
 
-An interactive web prototype of the design is in `prototype/volt-prototype.html`. Open it in any browser to click through the app with sample data.
+An interactive web prototype is in `prototype/volt-prototype.html` (it uses the current colours but the earlier layout).
 
 ## Exercise library
 

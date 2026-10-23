@@ -38,7 +38,7 @@ struct HistoryView: View {
                                 }
                             } header: {
                                 Text(month)
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(VoltFont.sans(12, weight: .medium))
                                     .foregroundStyle(VoltColor.labelSecondary)
                                     .textCase(.uppercase)
                                     .tracking(0.5)
@@ -89,7 +89,7 @@ struct WorkoutHistoryRow: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(VoltColor.surfaceHigh)
-                    .clipShape(Capsule())
+                    .clipShape(Rectangle())
             }
 
             HStack(spacing: 14) {
@@ -113,8 +113,8 @@ struct WorkoutHistoryRow: View {
 
     private func historyPill(_ value: String, label: String, icon: String) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: icon).font(.system(size: 9))
-            Text(value).font(.system(size: 11, weight: .semibold))
+            Image(systemName: icon).font(VoltFont.sans(9))
+            Text(value).font(VoltFont.sans(11, weight: .medium))
         }
         .foregroundStyle(VoltColor.labelSecondary)
     }
@@ -192,7 +192,7 @@ struct WorkoutDetailView: View {
                     } header: {
                         HStack(spacing: 8) {
                             Text(log.exerciseName)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(VoltFont.sans(13, weight: .medium))
                                 .foregroundStyle(VoltColor.label)
                                 .textCase(nil)
                             if let g = Exercise.MuscleGroup(rawValue: log.exerciseMuscleGroup) {
@@ -219,8 +219,8 @@ struct SummaryCell: View {
     var body: some View {
         VStack(spacing: 4) {
             Image(systemName: icon).font(.caption2).foregroundStyle(color)
-            Text(value).font(.system(size: 15, weight: .bold)).foregroundStyle(VoltColor.label)
-            Text(label).font(.system(size: 10)).foregroundStyle(VoltColor.labelTertiary)
+            Text(value).font(VoltFont.sans(15, weight: .medium)).foregroundStyle(VoltColor.label)
+            Text(label).font(VoltFont.sans(10)).foregroundStyle(VoltColor.labelTertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)

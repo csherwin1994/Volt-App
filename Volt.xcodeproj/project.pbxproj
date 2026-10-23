@@ -31,6 +31,8 @@
 		B00000021 /* WorkoutRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000021 /* WorkoutRecommendationEngine.swift */; };
 		B00000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000016 /* Assets.xcassets */; };
 		BRES000001 /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = ARES000001 /* exercises.json */; };
+		BRES000002 /* SchibstedGrotesk.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ARES000002 /* SchibstedGrotesk.ttf */; };
+		BRES000003 /* GeistMono.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ARES000003 /* GeistMono.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +60,8 @@
 		A00000020 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A00000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ARES000001 /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
+		ARES000002 /* SchibstedGrotesk.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/SchibstedGrotesk.ttf; sourceTree = "<group>"; };
+		ARES000003 /* GeistMono.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/GeistMono.ttf; sourceTree = "<group>"; };
 		PROD000001 /* Volt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Volt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -131,6 +135,8 @@
 			isa = PBXGroup;
 			children = (
 				ARES000001 /* exercises.json */,
+				ARES000002 /* SchibstedGrotesk.ttf */,
+				ARES000003 /* GeistMono.ttf */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -315,6 +321,8 @@
 			files = (
 				B00000016 /* Assets.xcassets in Resources */,
 				BRES000001 /* exercises.json in Resources */,
+				BRES000002 /* SchibstedGrotesk.ttf in Resources */,
+				BRES000003 /* GeistMono.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

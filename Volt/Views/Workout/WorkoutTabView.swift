@@ -78,14 +78,18 @@ struct WorkoutTabView: View {
 
     // MARK: - Header
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(VoltColor.labelSecondary)
-            Text("\(greeting),\n\(username)")
-                .font(.system(size: 34, weight: .semibold))
-                .tracking(-0.6)
-                .lineSpacing(2)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(Date().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).uppercased())
+                    .font(VoltFont.mono(11))
+                    .tracking(0.9)
+                    .foregroundStyle(VoltColor.labelSecondary)
+                Spacer()
+                AppearanceToggle()
+            }
+            Text("\(greeting), \(username).")
+                .font(VoltFont.sans(40))
+                .tracking(-1.4)
                 .foregroundStyle(VoltColor.label)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -97,12 +101,12 @@ struct WorkoutTabView: View {
             VStack(alignment: .leading, spacing: 8) {
                 VoltSectionTitle(workoutVM.isActive ? "In progress" : "Today")
                 Text(workoutVM.isActive ? (workoutVM.session?.title ?? "Workout") : rec.title)
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(VoltFont.sans(28, weight: .medium))
                     .tracking(-0.4)
                     .foregroundStyle(VoltColor.label)
                 if !workoutVM.isActive {
                     Text(rec.reason)
-                        .font(.system(size: 15))
+                        .font(VoltFont.sans(15))
                         .foregroundStyle(VoltColor.labelSecondary)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -132,7 +136,7 @@ struct WorkoutTabView: View {
                         workoutVM.startWorkout(context: modelContext)
                         showingActiveWorkout = true
                     }
-                    .font(.system(size: 15, weight: .medium))
+                    .font(VoltFont.sans(15, weight: .regular))
                     .foregroundStyle(VoltColor.label)
                     .frame(maxWidth: .infinity, minHeight: 44)
                 }
@@ -147,13 +151,13 @@ struct WorkoutTabView: View {
                 VoltSectionTitle("Your routines")
                 Spacer()
                 Button("New") { showingCreateRoutine = true }
-                    .font(.system(size: 15, weight: .medium))
+                    .font(VoltFont.sans(15, weight: .regular))
                     .foregroundStyle(VoltColor.accent)
             }
 
             if routines.isEmpty {
                 Text("Save a workout plan to start it with one tap.")
-                    .font(.system(size: 15))
+                    .font(VoltFont.sans(15))
                     .foregroundStyle(VoltColor.labelSecondary)
                     .padding(.vertical, 8)
             } else {
@@ -179,7 +183,7 @@ struct WorkoutTabView: View {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(session.title)
-                            .font(.system(size: 17, weight: .medium))
+                            .font(VoltFont.sans(17, weight: .regular))
                             .foregroundStyle(VoltColor.label)
                         Text("\(session.startDate.formatted(.relative(presentation: .named))) · \(session.formattedDuration) · \(Self.volumeText(session.totalVolume, unit: weightUnit))")
                             .font(VoltFont.mono(14, weight: .regular))
@@ -187,7 +191,7 @@ struct WorkoutTabView: View {
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(VoltFont.sans(13, weight: .medium))
                         .foregroundStyle(VoltColor.labelTertiary)
                 }
                 .padding(.vertical, 12)
@@ -216,7 +220,7 @@ struct PlannedExerciseRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(planned.name)
-                .font(.system(size: 16))
+                .font(VoltFont.sans(16))
                 .foregroundStyle(VoltColor.label)
                 .lineLimit(1)
             Spacer(minLength: 8)
@@ -248,7 +252,7 @@ struct WeekStrip: View {
                 let isToday = Calendar.current.isDateInToday(day)
                 VStack(spacing: 6) {
                     Text(day.formatted(.dateTime.weekday(.narrow)))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(VoltFont.sans(12, weight: .regular))
                         .foregroundStyle(isToday ? VoltColor.label : VoltColor.labelTertiary)
                     Text(day.formatted(.dateTime.day()))
                         .font(VoltFont.mono(14, weight: .medium))
@@ -280,20 +284,20 @@ struct ActiveWorkoutBar: View {
                 .onAppear { pulse = true }
             VStack(alignment: .leading, spacing: 1) {
                 Text(vm.session?.title ?? "Workout")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(VoltFont.sans(15, weight: .medium))
                 Text(vm.formattedElapsed)
                     .font(VoltFont.mono(13, weight: .regular))
                     .opacity(0.7)
             }
             Spacer()
             Text("Resume")
-                .font(.system(size: 14, weight: .semibold))
+                .font(VoltFont.sans(14, weight: .medium))
         }
         .foregroundStyle(VoltColor.onInk)
         .padding(.horizontal, VoltSpacing.md)
         .padding(.vertical, 12)
         .background(VoltColor.ink)
-        .clipShape(Capsule())
+        .clipShape(Rectangle())
         .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
         .accessibilityAddTraits(.isButton)
     }
@@ -308,7 +312,7 @@ struct RoutineListRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(routine.name)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(VoltFont.sans(17, weight: .regular))
                     .foregroundStyle(VoltColor.label)
                     .lineLimit(1)
                 Group {
@@ -318,17 +322,17 @@ struct RoutineListRow: View {
                         Text("\(routine.exerciseCount) exercises")
                     }
                 }
-                .font(.system(size: 13))
+                .font(VoltFont.sans(13))
                 .foregroundStyle(VoltColor.labelSecondary)
             }
             Spacer()
             Button("Start", action: onStart)
-                .font(.system(size: 14, weight: .semibold))
+                .font(VoltFont.sans(14, weight: .medium))
                 .foregroundStyle(VoltColor.label)
                 .padding(.horizontal, 16)
                 .frame(height: 34)
                 .background(VoltColor.surfaceHigh)
-                .clipShape(Capsule())
+                .clipShape(Rectangle())
                 .buttonStyle(.plain)
         }
         .padding(.vertical, 12)
