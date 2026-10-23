@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 
+// Profile tab. Layout follows Profile.dc.html on the App Screens canvas.
 struct ProfileView: View {
     @Binding var selectedTab: ContentView.Tab
     @Query private var sessions: [WorkoutSession]
@@ -8,226 +9,63 @@ struct ProfileView: View {
     @Environment(SupabaseManager.self) private var supabase
     @AppStorage("username") private var username = "Athlete"
     @AppStorage("weightUnit") private var weightUnit = "kg"
-    @State private var editingName = false
-    @State private var tempName = ""
     @State private var showingSignOutConfirm = false
+    @FocusState private var nameFocused: Bool
 
     private var completed: [WorkoutSession] { sessions.filter { $0.endDate != nil } }
 
-    private var totalVolume: Double {
-        completed.flatMap { $0.exerciseLogs }.flatMap { $0.sets }
-            .filter(\.isCompleted).reduce(0) { $0 + ($1.weight * Double($1.reps)) }
-    }
+    private var totalVolume: Double { completed.reduce(0) { $0 + $1.totalVolume } }
+    private var totalSets: Int { completed.reduce(0) { $0 + $1.totalSets } }
+    private var totalHours: Double { completed.reduce(0) { $0 + $1.duration } / 3600 }
 
-    private var totalSets: Int {
-        completed.flatMap { $0.exerciseLogs }.flatMap { $0.sets }
-            .filter(\.isCompleted).count
-    }
-
-    private var workoutsThisWeek: Int {
-        let start = Calendar.current.startOfWeek(for: Date())
-        return completed.filter { $0.startDate >= start }.count
-    }
-
-    private var streak: Int {
+    /// Consecutive weeks (Monday start) with at least one workout.
+    private var streakWeeks: Int {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2
+        let weeks = Set(completed.compactMap { cal.dateInterval(of: .weekOfYear, for: $0.startDate)?.start })
+        guard var start = cal.dateInterval(of: .weekOfYear, for: Date())?.start else { return 0 }
+        if !weeks.contains(start) { start = cal.date(byAdding: .weekOfYear, value: -1, to: start) ?? start }
         var count = 0
-        var day = Calendar.current.startOfDay(for: Date())
-        while completed.contains(where: { Calendar.current.isDate($0.startDate, inSameDayAs: day) }) {
+        while weeks.contains(start) {
             count += 1
-            day = Calendar.current.date(byAdding: .day, value: -1, to: day)!
+            start = cal.date(byAdding: .weekOfYear, value: -1, to: start) ?? start
         }
         return count
     }
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                VoltColor.bg.ignoresSafeArea()
-                List {
-                    profileHeader
-                    statsSection
-                    syncSection
+            ScrollView {
+                VStack(alignment: .leading, spacing: 36) {
+                    header
+
+                    Button { selectedTab = .history } label: {
+                        SpecGrid(cells: [
+                            ("Workouts", "\(completed.count)", ""),
+                            ("Sets", "\(totalSets)", ""),
+                            ("Volume", voltVolume(totalVolume), weightUnit.uppercased()),
+                            ("Time", String(format: "%.1f", totalHours), "H")
+                        ], columns: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens History")
+
                     settingsSection
+                    backupSection
                     aboutSection
-                    signOutSection
-                }
-                .scrollContentBackground(.hidden)
-                .listStyle(.insetGrouped)
-            }
-            .navigationTitle("Profile")
 
-        }
-    }
-
-    // MARK: - Profile header
-    private var profileHeader: some View {
-        Section {
-            HStack(spacing: VoltSpacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(VoltGradient.brand)
-                        .frame(width: 68, height: 68)
-                    Text(username.prefix(1).uppercased())
-                        .font(VoltFont.sans(28, weight: .medium))
-                        .foregroundStyle(VoltColor.onInk)
+                    VoltButton("Sign Out", style: .danger) { showingSignOutConfirm = true }
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    if editingName {
-                        TextField("Name", text: $tempName)
-                            .font(.title3.bold())
-                            .foregroundStyle(VoltColor.label)
-                            .onSubmit { saveName() }
-                    } else {
-                        Text(username)
-                            .font(.title3.bold())
-                            .foregroundStyle(VoltColor.label)
-                    }
-                    if let email = supabase.currentEmail {
-                        Text(email)
-                            .font(.caption)
-                            .foregroundStyle(VoltColor.labelSecondary)
-                    }
-                    if streak > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill").foregroundStyle(VoltColor.labelSecondary).font(.caption)
-                            Text("\(streak)-day streak")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(VoltColor.labelSecondary)
-                        }
-                    }
-                }
-                Spacer()
-                Button(editingName ? "Done" : "Edit") {
-                    if editingName { saveName() } else { tempName = username }
-                    editingName.toggle()
-                }
-                .font(.subheadline)
-                .foregroundStyle(VoltColor.accent)
+                .padding(.horizontal, VoltSpacing.gutter)
+                .padding(.top, VoltSpacing.md)
+                .padding(.bottom, VoltSpacing.xxl)
             }
-            .padding(.vertical, 6)
-        }
-        .listRowBackground(VoltColor.surface)
-    }
-
-    // MARK: - Stats
-    private var statsSection: some View {
-        Section("Stats") {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ProfileStatCard(value: "\(completed.count)", label: "Total Workouts", icon: "dumbbell.fill", color: VoltColor.labelSecondary) {
-                    selectedTab = .history
-                }
-                ProfileStatCard(value: "\(workoutsThisWeek)", label: "This Week", icon: "calendar", color: VoltColor.labelSecondary) {
-                    selectedTab = .history
-                }
-                ProfileStatCard(value: "\(totalSets)", label: "Total Sets", icon: "repeat", color: VoltColor.labelSecondary) {
-                    selectedTab = .progress
-                }
-                ProfileStatCard(
-                    value: totalVolume >= 1_000_000
-                        ? String(format: "%.1fM", totalVolume / 1_000_000)
-                        : totalVolume >= 1000
-                            ? String(format: "%.1fk", totalVolume / 1000)
-                            : String(format: "%.0f", totalVolume),
-                    label: "Volume (\(weightUnit))",
-                    icon: "scalemass.fill",
-                    color: VoltColor.labelSecondary
-                ) {
-                    selectedTab = .progress
-                }
-            }
-            .padding(.vertical, 4)
-        }
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-    }
-
-    // MARK: - Settings
-    private var settingsSection: some View {
-        Section("Settings") {
-            Picker("Weight Unit", selection: $weightUnit) {
-                Text("Kilograms (kg)").tag("kg")
-                Text("Pounds (lb)").tag("lb")
-            }
-            .foregroundStyle(VoltColor.label)
-            .listRowBackground(VoltColor.surface)
-            .listRowSeparatorTint(VoltColor.border)
-
-            HStack {
-                Text("Appearance").foregroundStyle(VoltColor.label)
-                Spacer()
-                AppearanceToggle()
-            }
-            .listRowBackground(VoltColor.surface)
-            .listRowSeparatorTint(VoltColor.border)
-
-            NavigationLink {
-                EquipmentSettingsView()
-            } label: {
-                Text("Gym Equipment")
-                    .foregroundStyle(VoltColor.label)
-            }
-            .listRowBackground(VoltColor.surface)
-            .listRowSeparatorTint(VoltColor.border)
-        }
-    }
-
-    // MARK: - Sync
-    private var syncSection: some View {
-        Section("Cloud Backup") {
-            Button {
-                Task { await supabase.syncAll(context: modelContext) }
-            } label: {
-                HStack {
-                    Image(systemName: supabase.isSyncing ? "arrow.triangle.2.circlepath" : "icloud.and.arrow.up")
-                        .foregroundStyle(VoltColor.accent)
-                        .frame(width: 28)
-                        .symbolEffect(.pulse, isActive: supabase.isSyncing)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Sync to Cloud")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(VoltColor.label)
-                        if let error = supabase.lastSyncError {
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(VoltColor.danger)
-                        } else {
-                            Text(supabase.isSyncing ? "Syncing..." : "Back up your workouts & routines")
-                                .font(.caption)
-                                .foregroundStyle(VoltColor.labelSecondary)
-                        }
-                    }
-                    Spacer()
-                    if !supabase.isSyncing {
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(VoltColor.labelTertiary)
-                    }
-                }
-            }
-            .disabled(supabase.isSyncing)
-            .listRowBackground(VoltColor.surface)
-            .listRowSeparatorTint(VoltColor.border)
-        }
-    }
-
-    // MARK: - Sign Out
-    private var signOutSection: some View {
-        Section {
-            Button(role: .destructive) {
-                showingSignOutConfirm = true
-            } label: {
-                HStack {
-                    Spacer()
-                    Text("Sign Out")
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                }
-            }
-            .listRowBackground(VoltColor.surface)
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .background(VoltColor.bg.ignoresSafeArea())
+            .navigationBarHidden(true)
             .confirmationDialog("Sign Out?", isPresented: $showingSignOutConfirm, titleVisibility: .visible) {
-                Button("Sign Out", role: .destructive) {
-                    Task { await supabase.signOut() }
-                }
+                Button("Sign Out", role: .destructive) { Task { await supabase.signOut() } }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Your data is saved locally and will be here when you sign back in.")
@@ -235,67 +73,129 @@ struct ProfileView: View {
         }
     }
 
+    // MARK: - Header: square avatar, editable name, streak
+    private var header: some View {
+        HStack(alignment: .bottom, spacing: 16) {
+            Text(username.prefix(1).uppercased())
+                .font(VoltFont.sans(28)).tracking(-0.8)
+                .foregroundStyle(VoltColor.onInk)
+                .padding(8)
+                .frame(width: 64, height: 64, alignment: .bottomLeading)
+                .background(VoltColor.ink)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 6) {
+                TextField("Name", text: $username)
+                    .font(VoltFont.sans(40)).tracking(-1.4)
+                    .foregroundStyle(VoltColor.label)
+                    .focused($nameFocused)
+                    .submitLabel(.done)
+                    .onSubmit { tidyName() }
+                    .onChange(of: nameFocused) { _, focused in if !focused { tidyName() } }
+                    .accessibilityLabel("Your name")
+                Group {
+                    if let email = supabase.currentEmail {
+                        Text("\(streakWeeks)-week streak · \(email)")
+                    } else {
+                        Text("\(streakWeeks)-week streak")
+                    }
+                }
+                .font(VoltFont.mono(11)).tracking(0.4).textCase(.uppercase)
+                .foregroundStyle(VoltColor.labelSecondary)
+                .lineLimit(1)
+            }
+        }
+    }
+
+    // MARK: - Settings
+    private var settingsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VoltSectionTitle("Settings")
+            VStack(spacing: 0) {
+                VoltRule(strong: true)
+                settingsRow("Appearance") { AppearanceToggle() }
+                VoltRule()
+                settingsRow("Weight unit") {
+                    VoltSegmented(options: [(value: "kg", label: "KG"), (value: "lb", label: "LB")], selection: $weightUnit, compact: true)
+                }
+                VoltRule()
+                NavigationLink { EquipmentSettingsView() } label: {
+                    settingsRow("Gym equipment") {
+                        Image(systemName: "arrow.right").font(.system(size: 14)).foregroundStyle(VoltColor.labelTertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                VoltRule()
+            }
+        }
+    }
+
+    // MARK: - Cloud backup
+    private var backupSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VoltSectionTitle("Cloud backup")
+            VStack(spacing: 0) {
+                VoltRule(strong: true)
+                Button { Task { await supabase.syncAll(context: modelContext) } } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sync to cloud").font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+                            Group {
+                                if let error = supabase.lastSyncError {
+                                    Text(error).foregroundStyle(VoltColor.danger)
+                                } else {
+                                    Text(supabase.isSyncing ? "Syncing…" : "Back up workouts and routines")
+                                        .foregroundStyle(VoltColor.labelSecondary)
+                                }
+                            }
+                            .font(VoltFont.mono(11)).tracking(0.4).textCase(.uppercase)
+                        }
+                        Spacer()
+                        if supabase.isSyncing {
+                            SwiftUI.ProgressView().tint(VoltColor.label)
+                        } else {
+                            Image(systemName: "arrow.right").font(.system(size: 14)).foregroundStyle(VoltColor.labelTertiary)
+                        }
+                    }
+                    .padding(.vertical, 13)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(supabase.isSyncing)
+                VoltRule()
+            }
+        }
+    }
+
     // MARK: - About
     private var aboutSection: some View {
-        Section("About") {
-            LabeledContent("App", value: "Volt")
-                .foregroundStyle(VoltColor.label)
-            LabeledContent("Version", value: "1.0.0")
-                .foregroundStyle(VoltColor.label)
-            LabeledContent("Platform", value: "iOS 17+")
-                .foregroundStyle(VoltColor.label)
-        }
-        .listRowBackground(VoltColor.surface)
-        .listRowSeparatorTint(VoltColor.border)
-    }
-
-    private func saveName() {
-        let trimmed = tempName.trimmingCharacters(in: .whitespaces)
-        username = trimmed.isEmpty ? "Athlete" : trimmed
-    }
-}
-
-struct ProfileStatCard: View {
-    let value: String
-    let label: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(VoltFont.sans(18, weight: .medium))
-                        .foregroundStyle(color)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(VoltFont.sans(10, weight: .medium))
-                        .foregroundStyle(color.opacity(0.5))
+        VStack(alignment: .leading, spacing: 12) {
+            VoltSectionTitle("About")
+            VStack(spacing: 0) {
+                VoltRule(strong: true)
+                ForEach([("App", "Volt"), ("Version", "1.0.0"), ("Platform", "iOS 17+")], id: \.0) { item in
+                    settingsRow(item.0) {
+                        Text(item.1.uppercased()).font(VoltFont.mono(12)).foregroundStyle(VoltColor.labelSecondary)
+                    }
+                    VoltRule()
                 }
-                Text(value)
-                    .font(VoltFont.sans(22, weight: .medium))
-                    .foregroundStyle(VoltColor.label)
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(VoltColor.labelSecondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(VoltSpacing.md)
-            .background(color.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radius))
-            .overlay(RoundedRectangle(cornerRadius: VoltSpacing.radius)
-                .stroke(color.opacity(0.15), lineWidth: 0.5))
         }
-        .buttonStyle(.plain)
     }
-}
 
-private extension Calendar {
-    func startOfWeek(for date: Date) -> Date {
-        let c = dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
-        return self.date(from: c) ?? date
+    private func settingsRow<Trailing: View>(_ title: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(spacing: 12) {
+            Text(title).font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+            Spacer(minLength: 8)
+            trailing()
+        }
+        .frame(minHeight: 52)
+        .contentShape(Rectangle())
+    }
+
+    private func tidyName() {
+        let trimmed = username.trimmingCharacters(in: .whitespaces)
+        username = trimmed.isEmpty ? "Athlete" : trimmed
     }
 }
 
@@ -340,21 +240,28 @@ struct EquipmentSettingsView: View {
     }
 
     var body: some View {
-        List {
-            Section {
-                ForEach(Exercise.Equipment.allCases, id: \.self) { equipment in
-                    Toggle(equipment.rawValue, isOn: binding(for: equipment))
-                        .tint(VoltColor.success)
-                        .listRowBackground(VoltColor.surface)
-                }
-            } footer: {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VoltScreenHeader(caption: "Settings", title: "Gym equipment")
                 Text("Suggested workouts only use equipment that is switched on.")
+                    .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                VStack(spacing: 0) {
+                    VoltRule(strong: true)
+                    ForEach(Exercise.Equipment.allCases, id: \.self) { equipment in
+                        Toggle(isOn: binding(for: equipment)) {
+                            Text(equipment.rawValue).font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+                        }
+                        .tint(VoltColor.accent)
+                        .frame(minHeight: 52)
+                        VoltRule()
+                    }
+                }
             }
+            .padding(.horizontal, VoltSpacing.gutter)
+            .padding(.top, VoltSpacing.sm)
+            .padding(.bottom, VoltSpacing.xxl)
         }
-        .scrollContentBackground(.hidden)
-        .background(VoltColor.bg)
-        .navigationTitle("Gym Equipment")
+        .background(VoltColor.bg.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-

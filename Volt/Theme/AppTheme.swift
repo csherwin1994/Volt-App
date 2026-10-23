@@ -250,3 +250,209 @@ struct AppearanceToggle: View {
         .accessibilityLabel("Appearance")
     }
 }
+
+// MARK: - Nordic Precision building blocks (match the App Screens canvas)
+
+/// 1pt hairline. `strong` is the ink rule that opens a list; the default is the row divider.
+struct VoltRule: View {
+    var strong = false
+    var body: some View {
+        Rectangle().fill(strong ? VoltColor.label : VoltColor.border).frame(height: 1)
+    }
+}
+
+/// Mono caption line + 40pt title, used at the top of every tab.
+struct VoltScreenHeader<Trailing: View>: View {
+    let caption: String
+    let title: String
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(caption: String, title: String, @ViewBuilder trailing: @escaping () -> Trailing) {
+        self.caption = caption; self.title = title; self.trailing = trailing
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center) {
+                Text(caption.uppercased())
+                    .font(VoltFont.mono(11)).tracking(0.9)
+                    .foregroundStyle(VoltColor.labelSecondary)
+                Spacer(minLength: 8)
+                trailing()
+            }
+            Text(title)
+                .font(VoltFont.sans(40)).tracking(-1.4)
+                .foregroundStyle(VoltColor.label)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+extension VoltScreenHeader where Trailing == EmptyView {
+    init(caption: String, title: String) {
+        self.init(caption: caption, title: title) { EmptyView() }
+    }
+}
+
+/// Underlined mono text button ("NEW").
+struct VoltTextLink: View {
+    let title: String
+    let action: () -> Void
+    init(_ title: String, action: @escaping () -> Void) { self.title = title; self.action = action }
+
+    var body: some View {
+        Button(action: action) {
+            Text(title.uppercased())
+                .font(VoltFont.mono(11, weight: .medium)).tracking(0.9)
+                .underline(true, color: VoltColor.label)
+                .foregroundStyle(VoltColor.label)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Square segmented control: ink fill for the selected segment, hairline gaps between.
+struct VoltSegmented<Value: Hashable>: View {
+    let options: [(value: Value, label: String)]
+    @Binding var selection: Value
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: 1) {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, option in
+                let on = option.value == selection
+                Button { selection = option.value } label: {
+                    Text(option.label.uppercased())
+                        .font(VoltFont.mono(compact ? 10 : 11)).tracking(compact ? 0.8 : 0.9)
+                        .padding(.horizontal, 10)
+                        .frame(maxWidth: compact ? nil : .infinity, minHeight: compact ? 30 : 40)
+                        .background(on ? VoltColor.ink : VoltColor.bg)
+                        .foregroundStyle(on ? VoltColor.onInk : VoltColor.labelSecondary)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(1)
+        .background(VoltColor.border)
+    }
+}
+
+/// Uppercase mono tag. `gold` is reserved for achievement (PRs, weight increases).
+struct VoltTag: View {
+    let text: String
+    var gold = false
+    var marker = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if marker { Rectangle().fill(VoltColor.accent).frame(width: 6, height: 6) }
+            Text(text.uppercased()).font(VoltFont.mono(11)).tracking(0.6)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(gold ? VoltColor.accent : VoltColor.surfaceHigh)
+        .foregroundStyle(gold ? VoltColor.onAccent : VoltColor.labelSecondary)
+    }
+}
+
+/// Search field with an ink underline instead of a rounded box.
+struct VoltSearchField: View {
+    @Binding var text: String
+    let prompt: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass").font(.system(size: 16)).foregroundStyle(VoltColor.label)
+                TextField("", text: $text, prompt: Text(prompt).foregroundStyle(VoltColor.labelTertiary))
+                    .font(VoltFont.sans(17))
+                    .foregroundStyle(VoltColor.label)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                if !text.isEmpty {
+                    Button { text = "" } label: { Image(systemName: "xmark").font(.system(size: 13)) }
+                        .buttonStyle(.plain).foregroundStyle(VoltColor.labelSecondary)
+                        .accessibilityLabel("Clear search")
+                }
+            }
+            .frame(height: 43)
+            VoltRule(strong: true)
+        }
+    }
+}
+
+/// Small outlined action ("Start →").
+struct VoltOutlineButton: View {
+    let title: String
+    var icon: String? = "arrow.right"
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Text(title).font(VoltFont.sans(15))
+                if let icon { Image(systemName: icon).font(.system(size: 12, weight: .regular)) }
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 36)
+            .foregroundStyle(VoltColor.label)
+            .overlay(Rectangle().strokeBorder(VoltColor.label, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Text-only mono tab bar with a gold rule over the current tab (TabBar.dc.html).
+struct VoltTabBar<Tab: Hashable>: View {
+    let tabs: [(tab: Tab, label: String)]
+    @Binding var selection: Tab
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VoltRule()
+            HStack(spacing: 0) {
+                ForEach(Array(tabs.enumerated()), id: \.offset) { _, item in
+                    let on = item.tab == selection
+                    Button { selection = item.tab } label: {
+                        VStack(spacing: 14) {
+                            Rectangle().fill(on ? VoltColor.accent : Color.clear).frame(height: 2)
+                            Text(item.label.uppercased())
+                                .font(VoltFont.mono(10)).tracking(0.9)
+                                .foregroundStyle(on ? VoltColor.label : VoltColor.labelTertiary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, 10)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
+                }
+            }
+            .padding(.horizontal, 8)
+        }
+        .background(VoltColor.bg.ignoresSafeArea(edges: .bottom))
+    }
+}
+
+extension Date {
+    /// "FRI 23 OCT · WEEK 43"
+    var voltCaption: String {
+        let week = Calendar(identifier: .iso8601).component(.weekOfYear, from: self)
+        return "\(formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))) · Week \(week)"
+    }
+}
+
+/// Weight without trailing zeros: 102.5, 100.
+func voltWeight(_ value: Double) -> String {
+    value.formatted(.number.precision(.fractionLength(0...1)))
+}
+
+/// Compact volume: 12.4K, 860.
+func voltVolume(_ value: Double) -> String {
+    value >= 1000 ? String(format: "%.1fK", value / 1000) : String(format: "%.0f", value)
+}

@@ -7,27 +7,21 @@ struct ContentView: View {
 
     enum Tab { case workout, history, progress, library, profile }
 
+    private let tabs: [(tab: Tab, label: String)] = [
+        (.workout, "Train"), (.history, "History"), (.progress, "Progress"), (.library, "Library"), (.profile, "Profile")
+    ]
+
     var body: some View {
+        // The system tab bar is hidden; VoltTabBar draws the text-only mono bar from the canvas.
         TabView(selection: $selectedTab) {
-            WorkoutTabView()
-                .tabItem { Label("Train", systemImage: "dumbbell") }
-                .tag(Tab.workout)
-
-            HistoryView()
-                .tabItem { Label("History", systemImage: "clock") }
-                .tag(Tab.history)
-
-            ProgressView()
-                .tabItem { Label("Progress", systemImage: "chart.bar") }
-                .tag(Tab.progress)
-
-            LibraryView()
-                .tabItem { Label("Library", systemImage: "book") }
-                .tag(Tab.library)
-
-            ProfileView(selectedTab: $selectedTab)
-                .tabItem { Label("Profile", systemImage: "person") }
-                .tag(Tab.profile)
+            WorkoutTabView().tag(Tab.workout).toolbar(.hidden, for: .tabBar)
+            HistoryView().tag(Tab.history).toolbar(.hidden, for: .tabBar)
+            ProgressView().tag(Tab.progress).toolbar(.hidden, for: .tabBar)
+            LibraryView().tag(Tab.library).toolbar(.hidden, for: .tabBar)
+            ProfileView(selectedTab: $selectedTab).tag(Tab.profile).toolbar(.hidden, for: .tabBar)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VoltTabBar(tabs: tabs, selection: $selectedTab)
         }
         .tint(VoltColor.ink)
         .onAppear { DataManager.seedExercisesIfNeeded(context: modelContext) }
@@ -58,13 +52,7 @@ struct LibrarySectionPicker: View {
     @Binding var selection: LibraryView.Section
 
     var body: some View {
-        Picker("Library section", selection: $selection) {
-            ForEach(LibraryView.Section.allCases) { Text($0.rawValue).tag($0) }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, VoltSpacing.gutter)
-        .padding(.top, VoltSpacing.xs)
-        .padding(.bottom, VoltSpacing.sm)
+        VoltSegmented(options: LibraryView.Section.allCases.map { (value: $0, label: $0.rawValue) }, selection: $selection)
     }
 }
 

@@ -1,56 +1,78 @@
 import SwiftUI
 import SwiftData
 
+// History tab. Layout follows History.dc.html on the App Screens canvas.
 struct HistoryView: View {
     @Query(sort: \WorkoutSession.startDate, order: .reverse) private var sessions: [WorkoutSession]
     @Environment(\.modelContext) private var modelContext
+    @State private var sessionToDelete: WorkoutSession?
 
     private var completed: [WorkoutSession] { sessions.filter { $0.endDate != nil } }
+    private var hours: Double { completed.reduce(0) { $0 + $1.duration } / 3600 }
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                VoltColor.bg.ignoresSafeArea()
-
-                if completed.isEmpty {
-                    EmptyStateView(
-                        icon: "clock",
-                        title: "No Workouts Yet",
-                        message: "Your completed workouts will appear here once you finish your first session."
+            ScrollView {
+                VStack(alignment: .leading, spacing: 36) {
+                    VoltScreenHeader(
+                        caption: "\(completed.count) workouts · \(String(format: "%.1f", hours)) hours",
+                        title: "History"
                     )
-                } else {
-                    List {
-                        ForEach(groupedByMonth, id: \.key) { month, workouts in
-                            Section {
+
+                    if completed.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            VoltRule(strong: true)
+                            Text("Nothing logged yet.").font(VoltFont.sans(24)).tracking(-0.6)
+                                .foregroundStyle(VoltColor.label).padding(.top, 14)
+                            Text("Finished workouts appear here.")
+                                .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                        }
+                    }
+
+                    ForEach(groupedByMonth, id: \.key) { month, workouts in
+                        VStack(alignment: .leading, spacing: 12) {
+                            VoltSectionTitle(month)
+                            VStack(spacing: 0) {
+                                VoltRule(strong: true)
                                 ForEach(workouts) { session in
-                                    NavigationLink {
-                                        WorkoutDetailView(session: session)
-                                    } label: {
-                                        WorkoutHistoryRow(session: session)
+                                    NavigationLink { WorkoutDetailView(session: session) } label: {
+                                        WorkoutHistoryRow(session: session, hasRecord: hasRecord(session))
                                     }
-                                    .listRowBackground(VoltColor.surface)
-                                    .listRowSeparatorTint(VoltColor.border)
-                                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                                    .buttonStyle(.plain)
+                                    .contextMenu {
+                                        Button("Delete Workout", role: .destructive) { sessionToDelete = session }
+                                    }
+                                    VoltRule()
                                 }
-                                .onDelete { offsets in
-                                    offsets.forEach { modelContext.delete(workouts[$0]) }
-                                    try? modelContext.save()
-                                }
-                            } header: {
-                                Text(month)
-                                    .font(VoltFont.sans(12, weight: .medium))
-                                    .foregroundStyle(VoltColor.labelSecondary)
-                                    .textCase(.uppercase)
-                                    .tracking(0.5)
                             }
                         }
                     }
-                    .scrollContentBackground(.hidden)
-                    .listStyle(.insetGrouped)
                 }
+                .padding(.horizontal, VoltSpacing.gutter)
+                .padding(.top, VoltSpacing.md)
+                .padding(.bottom, VoltSpacing.xxl)
             }
-            .navigationTitle("History")
+            .scrollIndicators(.hidden)
+            .background(VoltColor.bg.ignoresSafeArea())
+            .navigationBarHidden(true)
+            .confirmationDialog("Delete workout?", isPresented: Binding(
+                get: { sessionToDelete != nil }, set: { if !$0 { sessionToDelete = nil } }
+            ), titleVisibility: .visible) {
+                Button("Delete", role: .destructive) {
+                    if let s = sessionToDelete { modelContext.delete(s); try? modelContext.save() }
+                    sessionToDelete = nil
+                }
+                Button("Cancel", role: .cancel) { sessionToDelete = nil }
+            } message: {
+                Text("It will be removed from your history and charts.")
+            }
         }
+    }
+
+    /// True when the workout set a personal record against everything logged before it.
+    private func hasRecord(_ session: WorkoutSession) -> Bool {
+        guard completed.contains(where: { $0.startDate < session.startDate }) else { return false }
+        return !PersonalRecords.recordSetIDs(in: session, history: completed).isEmpty
     }
 
     private var groupedByMonth: [(key: String, value: [WorkoutSession])] {
@@ -60,63 +82,37 @@ struct HistoryView: View {
     }
 }
 
-// MARK: - Row
+// MARK: - Row: date block, title, mono stats, gold PR tag
 struct WorkoutHistoryRow: View {
     let session: WorkoutSession
+    var hasRecord = false
     @AppStorage("weightUnit") private var weightUnit = "kg"
 
-    private var muscles: [Exercise.MuscleGroup] {
-        Set(session.exerciseLogs.map(\.exerciseMuscleGroup))
-            .compactMap { Exercise.MuscleGroup(rawValue: $0) }
-            .sorted { $0.rawValue < $1.rawValue }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(session.title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(VoltColor.label)
-                    Text(session.startDate.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
-                        .foregroundStyle(VoltColor.labelSecondary)
-                }
-                Spacer()
-                Text(session.formattedDuration)
-                    .font(VoltFont.mono(12))
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.startDate.formatted(.dateTime.day()))
+                    .font(VoltFont.mono(20)).foregroundStyle(VoltColor.label)
+                Text(session.startDate.formatted(.dateTime.weekday(.abbreviated)).uppercased())
+                    .font(VoltFont.mono(10)).tracking(0.8).foregroundStyle(VoltColor.labelTertiary)
+            }
+            .frame(width: 44, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.title)
+                    .font(VoltFont.sans(17)).foregroundStyle(VoltColor.label)
+                    .lineLimit(1)
+                Text("\(Int(session.duration / 60)) min · \(session.totalSets) sets · \(voltVolume(session.totalVolume)) \(weightUnit)".uppercased())
+                    .font(VoltFont.mono(11)).tracking(0.4)
                     .foregroundStyle(VoltColor.labelSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(VoltColor.surfaceHigh)
-                    .clipShape(Rectangle())
+                    .lineLimit(1)
             }
-
-            HStack(spacing: 14) {
-                historyPill("\(session.totalSets)", label: "sets", icon: "dumbbell")
-                historyPill(
-                    session.totalVolume >= 1000
-                        ? String(format: "%.1fk \(weightUnit)", session.totalVolume/1000)
-                        : String(format: "%.0f \(weightUnit)", session.totalVolume),
-                    label: "vol", icon: "scalemass"
-                )
-                historyPill("\(session.exerciseLogs.count)", label: "exercises", icon: "list.bullet")
-            }
-
-            if !muscles.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 5) { ForEach(muscles, id: \.self) { MuscleBadge(group: $0) } }
-                }
-            }
+            Spacer(minLength: 8)
+            if hasRecord { VoltTag(text: "PR", gold: true) }
         }
-    }
-
-    private func historyPill(_ value: String, label: String, icon: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon).font(VoltFont.sans(9))
-            Text(value).font(VoltFont.sans(11, weight: .medium))
-        }
-        .foregroundStyle(VoltColor.labelSecondary)
+        .padding(.vertical, 13)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -125,6 +121,7 @@ struct WorkoutDetailView: View {
     let session: WorkoutSession
     @AppStorage("weightUnit") private var weightUnit = "kg"
     @Query(sort: \WorkoutSession.startDate) private var allSessions: [WorkoutSession]
+    @Query private var library: [Exercise]
 
     /// Sets in this workout that beat every earlier workout for that exercise.
     private var recordSetIDs: Set<UUID> {
@@ -136,94 +133,73 @@ struct WorkoutDetailView: View {
     }
 
     var body: some View {
-        ZStack {
-            VoltColor.bg.ignoresSafeArea()
-            List {
-                // Summary strip
-                Section {
-                    HStack(spacing: 0) {
-                        SummaryCell(value: session.formattedDuration, label: "Duration", icon: "clock.fill", color: VoltColor.labelSecondary)
-                        Divider().frame(height: 40)
-                        SummaryCell(value: "\(session.totalSets)", label: "Sets", icon: "dumbbell.fill", color: VoltColor.labelSecondary)
-                        Divider().frame(height: 40)
-                        SummaryCell(
-                            value: session.totalVolume >= 1000
-                                ? String(format: "%.1fk", session.totalVolume/1000)
-                                : String(format: "%.0f", session.totalVolume),
-                            label: "Volume \(weightUnit)",
-                            icon: "scalemass.fill",
-                            color: VoltColor.labelSecondary
-                        )
-                    }
+        let records = recordSetIDs
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: 20) {
+                    VoltScreenHeader(
+                        caption: session.startDate.formatted(.dateTime.weekday(.wide).day().month(.wide)),
+                        title: session.title
+                    )
+                    SpecGrid(cells: [
+                        ("Time", "\(Int(session.duration / 60))", "MIN"),
+                        ("Sets", "\(session.totalSets)", ""),
+                        ("Volume", voltVolume(session.totalVolume), weightUnit.uppercased())
+                    ])
                 }
-                .listRowBackground(VoltColor.surface)
-                .listRowSeparatorTint(VoltColor.border)
 
-                // Exercises
-                let records = recordSetIDs
                 ForEach(sortedLogs) { log in
-                    Section {
-                        ForEach(Array(log.completedSets.enumerated()), id: \.element.id) { idx, set in
-                            HStack {
-                                Text("Set \(idx + 1)")
-                                    .font(.subheadline)
-                                    .foregroundStyle(VoltColor.labelSecondary)
-                                if records.contains(set.id) {
-                                    Label("PR", systemImage: "trophy.fill")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(VoltColor.accent)
-                                }
-                                Spacer()
-                                Text(set.weight > 0
-                                     ? String(format: "%.1f \(weightUnit) × %d", set.weight, set.reps)
-                                     : "\(set.reps) reps")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(VoltColor.label)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .firstTextBaseline) {
+                            if let exercise = library.first(where: { $0.name == log.exerciseName }) {
+                                NavigationLink { ExerciseDetailView(exercise: exercise) } label: { exerciseName(log) }
+                                    .buttonStyle(.plain)
+                            } else {
+                                exerciseName(log)
                             }
-                            .listRowBackground(VoltColor.surface)
-                            .listRowSeparatorTint(VoltColor.border)
+                            Spacer()
+                            Text(log.exerciseMuscleGroup.uppercased())
+                                .font(VoltFont.mono(11)).tracking(0.4).foregroundStyle(VoltColor.labelSecondary)
                         }
-                        if log.completedSets.isEmpty {
-                            Text("No completed sets")
-                                .font(.subheadline)
-                                .foregroundStyle(VoltColor.labelTertiary)
-                                .listRowBackground(VoltColor.surface)
-                        }
-                    } header: {
-                        HStack(spacing: 8) {
-                            Text(log.exerciseName)
-                                .font(VoltFont.sans(13, weight: .medium))
-                                .foregroundStyle(VoltColor.label)
-                                .textCase(nil)
-                            if let g = Exercise.MuscleGroup(rawValue: log.exerciseMuscleGroup) {
-                                MuscleBadge(group: g)
+                        VStack(spacing: 0) {
+                            VoltRule(strong: true)
+                            if log.completedSets.isEmpty {
+                                Text("No completed sets")
+                                    .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelTertiary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 10)
+                                VoltRule()
+                            }
+                            ForEach(Array(log.completedSets.enumerated()), id: \.element.id) { idx, set in
+                                HStack(spacing: 12) {
+                                    Text(String(format: "%02d", idx + 1))
+                                        .font(VoltFont.mono(11)).foregroundStyle(VoltColor.labelTertiary)
+                                        .frame(width: 18, alignment: .leading)
+                                    Text(set.weight > 0 ? "\(voltWeight(set.weight)) \(weightUnit.uppercased()) × \(set.reps)" : "\(set.reps) reps")
+                                        .font(VoltFont.mono(14)).foregroundStyle(VoltColor.label)
+                                    Spacer()
+                                    if records.contains(set.id) { VoltTag(text: "PR", gold: true) }
+                                }
+                                .padding(.vertical, 10)
+                                VoltRule()
                             }
                         }
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .listStyle(.insetGrouped)
+            .padding(.horizontal, VoltSpacing.gutter)
+            .padding(.top, VoltSpacing.sm)
+            .padding(.bottom, VoltSpacing.xxl)
         }
-        .navigationTitle(session.title)
+        .scrollIndicators(.hidden)
+        .background(VoltColor.bg.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
     }
-}
 
-struct SummaryCell: View {
-    let value: String
-    let label: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon).font(.caption2).foregroundStyle(color)
-            Text(value).font(VoltFont.sans(15, weight: .medium)).foregroundStyle(VoltColor.label)
-            Text(label).font(VoltFont.sans(10)).foregroundStyle(VoltColor.labelTertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
+    private func exerciseName(_ log: ExerciseLog) -> some View {
+        Text(log.exerciseName)
+            .font(VoltFont.sans(20)).tracking(-0.5)
+            .foregroundStyle(VoltColor.label)
     }
 }
 

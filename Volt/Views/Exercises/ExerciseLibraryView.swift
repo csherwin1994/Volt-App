@@ -1,8 +1,10 @@
 import SwiftUI
 import SwiftData
 
+// Library tab, Exercises side. Layout follows Library.dc.html on the App Screens canvas.
 struct ExerciseLibraryView: View {
     @Query(sort: \Exercise.name) private var exercises: [Exercise]
+    @Query private var routines: [Routine]
     @State private var search = ""
     @State private var selectedMuscle: Exercise.MuscleGroup?
     @State private var showingCreate = false
@@ -47,101 +49,98 @@ struct ExerciseLibraryView: View {
                 }
             }
         } label: {
-            Image(systemName: activeFilterCount > 0 ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                .foregroundStyle(VoltColor.ink)
-                .accessibilityLabel(activeFilterCount > 0 ? "Filters, \(activeFilterCount) on" : "Filters")
+            Text(activeFilterCount > 0 ? "FILTER · \(activeFilterCount)" : "FILTER")
+                .font(VoltFont.mono(11, weight: .medium)).tracking(0.9)
+                .underline(true, color: VoltColor.label)
+                .foregroundStyle(VoltColor.label)
+                .frame(minHeight: 44)
         }
+        .accessibilityLabel(activeFilterCount > 0 ? "Filters, \(activeFilterCount) on" : "Filters")
     }
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                VoltColor.bg.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    if let librarySection { LibrarySectionPicker(selection: librarySection) }
-
-                    // Muscle filter
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            FilterChip(label: "All", isSelected: selectedMuscle == nil) { selectedMuscle = nil }
-                            ForEach(Exercise.MuscleGroup.allCases, id: \.self) { g in
-                                FilterChip(label: g.rawValue, isSelected: selectedMuscle == g) {
-                                    selectedMuscle = selectedMuscle == g ? nil : g
-                                }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VoltScreenHeader(
+                            caption: "\(exercises.count) exercises · \(routines.count) routines",
+                            title: librarySection == nil ? "Exercises" : "Library"
+                        ) {
+                            HStack(spacing: 16) {
+                                filterMenu
+                                VoltTextLink("New") { showingCreate = true }
+                                    .accessibilityLabel("New exercise")
                             }
                         }
-                        .padding(.horizontal, VoltSpacing.gutter)
-                        .padding(.vertical, VoltSpacing.sm)
+                        if let librarySection { LibrarySectionPicker(selection: librarySection) }
+                        VoltSearchField(text: $search, prompt: "Search exercises or muscles")
+                        MuscleChips(selection: $selectedMuscle)
                     }
+                    .padding(.bottom, 20)
 
+                    VoltRule(strong: true)
                     if filtered.isEmpty {
-                        EmptyStateView(
-                            icon: "magnifyingglass",
-                            title: "No Exercises Found",
-                            message: "Try a different search or muscle group filter.",
-                            actionTitle: "Create Exercise",
-                            action: { showingCreate = true }
-                        )
-                    } else {
-                        List(filtered) { exercise in
-                            NavigationLink { ExerciseDetailView(exercise: exercise) } label: {
-                                ExerciseRow(exercise: exercise)
-                            }
-                            .listRowBackground(VoltColor.surface)
-                            .listRowSeparatorTint(VoltColor.border)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("No exercises found.").font(VoltFont.sans(24)).tracking(-0.6).foregroundStyle(VoltColor.label)
+                            Text("Try another word or muscle group, or add your own.")
+                                .font(VoltFont.sans(15)).foregroundStyle(VoltColor.labelSecondary)
+                            VoltButton("Create Exercise", style: .secondary) { showingCreate = true }
+                                .padding(.top, 10)
                         }
-                        .scrollContentBackground(.hidden)
+                        .padding(.vertical, 24)
+                    }
+                    ForEach(filtered) { exercise in
+                        NavigationLink { ExerciseDetailView(exercise: exercise) } label: {
+                            ExerciseRow(exercise: exercise)
+                        }
+                        .buttonStyle(.plain)
+                        VoltRule()
                     }
                 }
+                .padding(.horizontal, VoltSpacing.gutter)
+                .padding(.top, VoltSpacing.md)
+                .padding(.bottom, VoltSpacing.xxl)
             }
-            .searchable(text: $search, prompt: "Search \(exercises.count) exercises")
-            .navigationTitle(librarySection == nil ? "Exercises" : "Library")
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    filterMenu
-                    Button { showingCreate = true } label: {
-                        Image(systemName: "plus")
-                            .foregroundStyle(VoltColor.ink)
-                    }
-                    .accessibilityLabel("New exercise")
-                }
-            }
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .background(VoltColor.bg.ignoresSafeArea())
+            .navigationBarHidden(true)
             .sheet(isPresented: $showingCreate) { CreateExerciseView() }
         }
     }
 }
 
+/// Library row: name, then MUSCLE · EQUIPMENT · LEVEL in mono, arrow (or plus in pickers) on the right.
 struct ExerciseRow: View {
     let exercise: Exercise
+    var trailingIcon = "arrow.right"
 
     private var detail: String {
-        [exercise.muscleGroup.rawValue, exercise.equipment.rawValue, exercise.level.capitalized]
+        [exercise.muscleGroup.rawValue, exercise.equipment.rawValue, exercise.level.capitalized, exercise.isCustom ? "Custom" : ""]
             .filter { !$0.isEmpty }
             .joined(separator: " · ")
     }
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.name)
-                    .font(VoltFont.sans(16, weight: .regular))
+                    .font(VoltFont.sans(17))
                     .foregroundStyle(VoltColor.label)
-                Text(detail)
-                    .font(VoltFont.sans(13))
+                    .lineLimit(1)
+                Text(detail.uppercased())
+                    .font(VoltFont.mono(11)).tracking(0.4)
                     .foregroundStyle(VoltColor.labelSecondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: 8)
-            if exercise.isCustom {
-                Text("Custom")
-                    .font(VoltFont.sans(12, weight: .regular))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(VoltColor.surfaceHigh)
-                    .foregroundStyle(VoltColor.labelSecondary)
-                    .clipShape(Rectangle())
-            }
+            Image(systemName: trailingIcon)
+                .font(.system(size: 14))
+                .foregroundStyle(trailingIcon == "plus" ? VoltColor.label : VoltColor.labelTertiary)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 13)
+        .contentShape(Rectangle())
     }
 }
 
@@ -596,9 +595,10 @@ struct MuscleMapView: View {
 // MARK: - Spec grid: hard cells with hairline gaps
 struct SpecGrid: View {
     let cells: [(label: String, value: String, unit: String)]
+    var columns = 3
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 3), spacing: 1) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: columns), spacing: 1) {
             ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(cell.label.uppercased()).font(VoltFont.mono(10)).tracking(0.8).foregroundStyle(VoltColor.labelSecondary)

@@ -12,6 +12,8 @@ struct PlannedExercise: Equatable {
     let weight: Double?
     /// Short reason for the target, e.g. "+2.5 kg: you hit 6 reps on every set last time".
     let note: String
+    /// How much heavier than last time, when the target is a weight increase (the gold "+2.5 KG" chip).
+    var increase: Double? = nil
 }
 
 /// A suggested workout: either one of the user's routines or one built from the exercise library.
@@ -304,7 +306,8 @@ enum WorkoutRecommendationEngine {
         if minReps >= repTop {
             return PlannedExercise(name: name, muscleGroup: muscleGroup, sets: sets, reps: repFloor,
                                    weight: top.weight + step,
-                                   note: "Up \(step.formatted()) \(settings.unit): you hit \(repTop) reps on every set last time.")
+                                   note: "Up \(step.formatted()) \(settings.unit): you hit \(repTop) reps on every set last time.",
+                                   increase: step)
         }
         let reps = min(repTop, max(repFloor, minReps + 1))
         return PlannedExercise(name: name, muscleGroup: muscleGroup, sets: sets, reps: reps, weight: top.weight,
