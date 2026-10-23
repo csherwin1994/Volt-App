@@ -94,7 +94,7 @@ struct ActiveWorkoutView: View {
                 } label: {
                     Text("Finish")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(VoltColor.onSuccess)
                         .padding(.horizontal, 14)
                         .frame(height: 34)
                         .background(VoltColor.success)
@@ -369,7 +369,7 @@ struct SetRow: View {
             Button { vm.toggleSetComplete(set, context: modelContext) } label: {
                 Image(systemName: "checkmark")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(set.isCompleted ? Color.white : VoltColor.labelTertiary)
+                    .foregroundStyle(set.isCompleted ? VoltColor.onSuccess : VoltColor.labelTertiary)
                     .frame(width: 38, height: 36)
                     .background(set.isCompleted ? VoltColor.success : VoltColor.surfaceHigh)
                     .clipShape(RoundedRectangle(cornerRadius: VoltSpacing.radiusSm, style: .continuous))

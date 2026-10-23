@@ -2,43 +2,89 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one phone-sized app, framed on wide screens and full-bleed on phones. Quiet neutrals, ink buttons, one blue accent for live state. */
+/* BEGIN GENERATED TOKENS */
 :root {
-  --page: #E7E9ED;
-  --frame: #15171B;
   --bg: #F5F6F8;
   --surface: #FFFFFF;
   --fill: #EEF0F3;
   --line: #E3E5EA;
+  --line-soft: #EDEFF2;
   --ink: #121418;
-  --ink-2: #5E6472;
-  --ink-3: #9AA0AC;
   --on-ink: #FFFFFF;
   --accent: #3352FF;
   --accent-soft: #EBEEFF;
-  --good: #17994A;
+  --label: #121418;
+  --ink-2: #5E6472;
+  --ink-3: #6B717D;
+  --good: #15803D;
+  --on-good: #FFFFFF;
   --good-soft: #E5F5EB;
-  --danger: #D92D20;
+  --warn: #C2410C;
+  --danger: #C42B1E;
   --danger-soft: #FDECEA;
   --bar: #D6DAE2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0C0E;
+    --surface: #16181C;
+    --fill: #202329;
+    --line: #262930;
+    --line-soft: #1D2024;
+    --ink: #F2F3F5;
+    --on-ink: #0B0C0E;
+    --accent: #7D8DFF;
+    --accent-soft: #1C2142;
+    --label: #F2F3F5;
+    --ink-2: #A3A9B5;
+    --ink-3: #878D97;
+    --good: #3CCB70;
+    --on-good: #0B0C0E;
+    --good-soft: #10261A;
+    --warn: #FF9F0A;
+    --danger: #FF6E61;
+    --danger-soft: #2E1512;
+    --bar: #30343C;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0C0E;
+  --surface: #16181C;
+  --fill: #202329;
+  --line: #262930;
+  --line-soft: #1D2024;
+  --ink: #F2F3F5;
+  --on-ink: #0B0C0E;
+  --accent: #7D8DFF;
+  --accent-soft: #1C2142;
+  --label: #F2F3F5;
+  --ink-2: #A3A9B5;
+  --ink-3: #878D97;
+  --good: #3CCB70;
+  --on-good: #0B0C0E;
+  --good-soft: #10261A;
+  --warn: #FF9F0A;
+  --danger: #FF6E61;
+  --danger-soft: #2E1512;
+  --bar: #30343C;
+}
+/* END GENERATED TOKENS */
+/* Layout: one phone-sized app, framed on wide screens and full-bleed on phones. Quiet neutrals, ink buttons, one blue accent for live state. */
+:root {
+  --page: #E7E9ED;
+  --frame: #15171B;
   --scrim: rgba(18, 20, 24, 0.32);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Figtree", "Segoe UI", Roboto, sans-serif;
   --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Figtree", "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --page: #050506; --frame: #2A2D33; --bg: #0B0C0E; --surface: #16181C; --fill: #202329; --line: #262930;
-    --ink: #F2F3F5; --ink-2: #A3A9B5; --ink-3: #6A707C; --on-ink: #0B0C0E;
-    --accent: #7D8DFF; --accent-soft: #1C2142; --good: #3CCB70; --good-soft: #10261A;
-    --danger: #FF6E61; --danger-soft: #2E1512; --bar: #30343C; --scrim: rgba(0,0,0,0.55);
+    --page: #050506; --frame: #2A2D33; --scrim: rgba(0,0,0,0.55);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --page: #050506; --frame: #2A2D33; --bg: #0B0C0E; --surface: #16181C; --fill: #202329; --line: #262930;
-  --ink: #F2F3F5; --ink-2: #A3A9B5; --ink-3: #6A707C; --on-ink: #0B0C0E;
-  --accent: #7D8DFF; --accent-soft: #1C2142; --good: #3CCB70; --good-soft: #10261A;
-  --danger: #FF6E61; --danger-soft: #2E1512; --bar: #30343C; --scrim: rgba(0,0,0,0.55);
+  --page: #050506; --frame: #2A2D33; --scrim: rgba(0,0,0,0.55);
   color-scheme: dark;
 }
 
@@ -94,7 +140,7 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 0; letter-s
 .btn.secondary { background: var(--fill); color: var(--ink); }
 .btn.danger { background: var(--danger-soft); color: var(--danger); }
 .btn.sm { height: 34px; width: auto; padding: 0 14px; font-size: 14px; border-radius: 10px; }
-.btn.good { background: var(--good); color: #fff; }
+.btn.good { background: var(--good); color: var(--on-good); }
 .icon-btn { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-2); }
 .icon-btn:hover { background: var(--fill); }
 svg.i { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -184,7 +230,7 @@ button.row:hover { background: var(--fill); }
 .grid.done { background: var(--good-soft); }
 .grid.done input { background: transparent; }
 .check { width: 36px; height: 36px; border-radius: 10px; background: var(--fill); display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
-.grid.done .check { background: var(--good); color: #fff; }
+.grid.done .check { background: var(--good); color: var(--on-good); }
 .add-set { width: 100%; padding: 12px; font-size: 14px; font-weight: 500; color: var(--ink-2); }
 .ex-menu { display: flex; gap: 8px; padding: 0 16px 10px; }
 .rest {

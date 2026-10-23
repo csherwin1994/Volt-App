@@ -33,37 +33,50 @@ extension UIColor {
 // Clean & minimal: quiet neutrals, ink for primary actions, one blue accent for live state.
 // Every token adapts to light and dark mode.
 enum VoltColor {
-    // Backgrounds
-    static let bg           = Color(light: "F5F6F8", dark: "0B0C0E")
-    static let surface      = Color(light: "FFFFFF", dark: "16181C")
-    static let surfaceHigh  = Color(light: "EEF0F3", dark: "202329")   // input fills, secondary buttons
-    static let border       = Color(light: "E3E5EA", dark: "262930")
-    static let borderSubtle = Color(light: "EDEFF2", dark: "1D2024")
-
-    // Ink — primary buttons and selected states (black in light mode, white in dark mode)
-    static let ink   = Color(light: "121418", dark: "F2F3F5")
-    static let onInk = Color(light: "FFFFFF", dark: "0B0C0E")
-
-    // Accent — used sparingly: timers, links, chart highlights
-    static let accent       = Color(light: "3352FF", dark: "7D8DFF")
-    static let accentDim    = Color(light: "EBEEFF", dark: "1C2142")
-    static let accentPurple = accent   // kept for older call sites; the redesign uses a single accent
-    static let accentGreen  = success
-
-    // Text
+    // BEGIN GENERATED TOKENS
+    /// Screen background
+    static let bg             = Color(light: "F5F6F8", dark: "0B0C0E")
+    /// Cards and list rows
+    static let surface        = Color(light: "FFFFFF", dark: "16181C")
+    /// Input fields, secondary buttons, tags
+    static let surfaceHigh    = Color(light: "EEF0F3", dark: "202329")
+    /// Dividers between rows
+    static let border         = Color(light: "E3E5EA", dark: "262930")
+    /// Faint dividers
+    static let borderSubtle   = Color(light: "EDEFF2", dark: "1D2024")
+    /// Primary buttons, selected chips, rest bar
+    static let ink            = Color(light: "121418", dark: "F2F3F5")
+    /// Text and icons on ink
+    static let onInk          = Color(light: "FFFFFF", dark: "0B0C0E")
+    /// Timers, links, chart highlight, PR trophy
+    static let accent         = Color(light: "3352FF", dark: "7D8DFF")
+    /// Chart area fill
+    static let accentDim      = Color(light: "EBEEFF", dark: "1C2142")
+    /// Primary text
     static let label          = Color(light: "121418", dark: "F2F3F5")
+    /// Secondary text, section titles
     static let labelSecondary = Color(light: "5E6472", dark: "A3A9B5")
-    static let labelTertiary  = Color(light: "9AA0AC", dark: "6A707C")
+    /// Hints, column headers, inactive tabs (4.5:1 on cards and the screen background; placeholder text on input fills is slightly lower)
+    static let labelTertiary  = Color(light: "6B717D", dark: "878D97")
+    /// Finish button, completed set tick
+    static let success        = Color(light: "15803D", dark: "3CCB70")
+    /// Text and icons on success (white in light mode, near-black in dark mode where success is bright)
+    static let onSuccess      = Color(light: "FFFFFF", dark: "0B0C0E")
+    /// Completed set row background
+    static let successSoft    = Color(light: "E5F5EB", dark: "10261A")
+    /// Warnings
+    static let warning        = Color(light: "C2410C", dark: "FF9F0A")
+    /// Discard, delete, sign out
+    static let danger         = Color(light: "C42B1E", dark: "FF6E61")
+    /// Destructive button background
+    static let dangerSoft     = Color(light: "FDECEA", dark: "2E1512")
+    /// Chart bars that are not highlighted
+    static let bar            = Color(light: "D6DAE2", dark: "30343C")
+    // END GENERATED TOKENS
 
-    // Semantic
-    static let success     = Color(light: "17994A", dark: "3CCB70")
-    static let successSoft = Color(light: "E5F5EB", dark: "10261A")
-    static let warning     = Color(light: "C2410C", dark: "FF9F0A")
-    static let danger      = Color(light: "D92D20", dark: "FF6E61")
-    static let dangerSoft  = Color(light: "FDECEA", dark: "2E1512")
-
-    // Chart bars that are not highlighted
-    static let bar = Color(light: "D6DAE2", dark: "30343C")
+    // Aliases kept for older call sites; the redesign uses a single accent
+    static let accentPurple = accent
+    static let accentGreen  = success
 
     /// Muscle groups no longer get their own colours; tags are neutral so the screen stays calm.
     static func muscle(_ group: Exercise.MuscleGroup) -> Color { labelSecondary }
@@ -80,19 +93,19 @@ enum VoltGradient {
 
 // MARK: - Spacing & Sizing
 enum VoltSpacing {
-    static let xs: CGFloat  = 4
-    static let sm: CGFloat  = 8
-    static let md: CGFloat  = 16
-    static let lg: CGFloat  = 24
-    static let xl: CGFloat  = 32
+    // BEGIN GENERATED TOKENS
+    static let xs: CGFloat = 4
+    static let sm: CGFloat = 8
+    static let md: CGFloat = 16
+    static let lg: CGFloat = 24
+    static let xl: CGFloat = 32
     static let xxl: CGFloat = 48
-
     static let gutter: CGFloat = 20
-
-    static let radius: CGFloat   = 16
-    static let radiusLg: CGFloat = 20
-    static let radiusSm: CGFloat = 10
     static let radiusXs: CGFloat = 9
+    static let radiusSm: CGFloat = 10
+    static let radius: CGFloat = 16
+    static let radiusLg: CGFloat = 20
+    // END GENERATED TOKENS
 }
 
 // MARK: - Typography
