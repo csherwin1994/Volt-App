@@ -57,16 +57,16 @@ struct ActiveWorkoutView: View {
         } message: {
             Text("Save \(completedSetCount) completed \(completedSetCount == 1 ? "set" : "sets") to your history. Unticked sets are left out.")
         }
-        .confirmationDialog("Discard workout?", isPresented: $showingDiscard, titleVisibility: .visible) {
-            Button("Discard", role: .destructive) { vm.discardWorkout(context: modelContext); dismiss() }
-            Button("Cancel", role: .cancel) {}
+        .confirmationDialog("Cancel this workout?", isPresented: $showingDiscard, titleVisibility: .visible) {
+            Button("Cancel Workout", role: .destructive) { vm.discardWorkout(context: modelContext); dismiss() }
+            Button("Keep Training", role: .cancel) {}
         } message: {
-            Text("This workout and its sets will be deleted.")
+            Text("Nothing from it will be saved. Your history stays as it is.")
         }
         .alert("No sets completed", isPresented: $showingNothingToSave) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Tick off at least one set before finishing, or discard this workout.")
+            Text("Tick off at least one set before finishing, or cancel this workout.")
         }
     }
 
@@ -91,6 +91,15 @@ struct ActiveWorkoutView: View {
                 .font(VoltFont.mono(11)).tracking(0.9)
                 .textInputAutocapitalization(.characters)
                 .foregroundStyle(VoltColor.labelSecondary)
+
+                // Cancel: leave without saving (asks first)
+                Button { showingDiscard = true } label: {
+                    Image(systemName: "xmark").font(.system(size: 18))
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(VoltColor.label)
+                .accessibilityLabel("Cancel workout")
 
                 Button {
                     if completedSetCount == 0 { showingNothingToSave = true } else { showingFinish = true }
@@ -213,7 +222,7 @@ struct ActiveWorkoutView: View {
 
                 VoltButton("Add Exercise", style: .secondary) { showingExercisePicker = true }
 
-                Button("Discard workout") { showingDiscard = true }
+                Button("Cancel workout") { showingDiscard = true }
                     .font(VoltFont.sans(17))
                     .foregroundStyle(VoltColor.danger)
                     .frame(maxWidth: .infinity, minHeight: 44)

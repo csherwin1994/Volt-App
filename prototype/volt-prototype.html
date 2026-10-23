@@ -486,7 +486,7 @@ function finishWorkout() {
   S.history.unshift(a); S.active = null; U.rest = null; U.workoutOpen = false;
   save(); U.sheet = { type: 'summary', id: a.id }; render();
 }
-function discardWorkout() { S.active = null; U.rest = null; U.workoutOpen = false; save(); render(); toast('Workout discarded'); }
+function discardWorkout() { S.active = null; U.rest = null; U.workoutOpen = false; save(); render(); toast('Workout cancelled'); }
 function isPR(ex, w, r, excludeId) {
   const earlier = S.history.filter(h => h.id !== excludeId).flatMap(h => h.logs.filter(l => l.ex === ex).flatMap(l => l.sets));
   if (!earlier.length || !w || !r) return false;
@@ -729,7 +729,7 @@ function renderWorkout() {
     <div class="statusbar" aria-hidden="true"><span></span><span class="notch"></span><span></span></div>
     <div class="w-top"><button class="icon-btn" data-act="minimize" aria-label="Minimise workout">${ic('down', 20)}</button>
       <span class="w-live"><span style="width:7px;height:7px;background:var(--accent);flex:none"></span><input id="w-title" data-input="w-title" value="${esc(a.title)}" aria-label="Workout name"></span>
-      <button class="btn gold sm" data-act="finish">Finish ${ic('arrow', 14)}</button></div>
+      <button class="icon-btn" data-act="discard" aria-label="Cancel workout" title="Cancel workout">${ic('x', 20)}</button><button class="btn gold sm" data-act="finish">Finish ${ic('arrow', 14)}</button></div>
     <div class="w-clock"><span class="hero" data-timer>${fmtDur((Date.now() - a.start) / 1000)}</span><span class="w-meta cap"><span>${done} / ${total} sets</span><span>${fmtVol(vol)} ${unitU()}</span></span></div>
     <div class="w-progress"><i style="width:${total ? Math.round(done / total * 100) : 0}%"></i></div>
     <div class="scroll"><div class="w-body">
@@ -745,7 +745,7 @@ function renderWorkout() {
         <button class="addset" data-act="add-set" data-li="${li}">+ ADD SET</button></section>`;
       }).join('')}
       <button class="btn outline" data-act="add-ex">Add Exercise ${ic('plus', 18)}</button>
-      <button class="btn text" data-act="discard">Discard workout</button>
+      <button class="btn text" data-act="discard">Cancel workout</button>
     </div></div>
     ${U.banner ? `<div class="banner" role="status">${esc(U.banner)}</div>` : ''}
     ${U.rest ? `<div class="rest" role="timer"><div class="rest-row"><div style="flex:1;display:flex;flex-direction:column;gap:8px"><span class="lbl" style="color:inherit;opacity:.65;font-weight:400">Rest</span><span class="rest-time" data-rest>${fmtDur((U.rest.ends - Date.now()) / 1000).replace(/^0/, '')}</span></div><button data-act="rest-add" data-k="-15">−15</button><button data-act="rest-add" data-k="15">+15</button><button data-act="rest-skip">SKIP</button></div><div class="track"><i data-rest-bar style="width:${Math.max(0, (U.rest.ends - Date.now()) / (U.rest.total * 10))}%"></i></div></div>` : ''}
@@ -837,7 +837,7 @@ function renderSheet() {
 function renderDialog() {
   const d = U.dialog;
   $('dialog').innerHTML = d ? `<div class="layer dialog-wrap"><div class="dialog" role="alertdialog" aria-label="${esc(d.title)}"><span style="font-size:24px;letter-spacing:-.6px">${esc(d.title)}</span><span class="lead">${esc(d.msg)}</span>
-    <div class="acts"><button class="btn outline" data-act="dlg-cancel">Cancel</button><button class="btn ${d.danger ? 'danger' : 'primary'}" data-act="dlg-ok">${esc(d.ok)}</button></div></div></div>` : '';
+    <div class="acts"><button class="btn outline" data-act="dlg-cancel">${esc(d.no || 'Cancel')}</button><button class="btn ${d.danger ? 'danger' : 'primary'}" data-act="dlg-ok">${esc(d.ok)}</button></div></div></div>` : '';
 }
 const confirmDlg = (title, msg, ok, danger, fn) => { U.dialog = { title, msg, ok, danger, fn }; renderDialog(); };
 let toastT;
@@ -880,9 +880,9 @@ $('device').addEventListener('click', e => {
       U.sheet = null; U.exercise = null; U.workoutOpen = true; save(); render(); toast(`Added ${name}`); break; }
     case 'finish': {
       const done = a.logs.reduce((n, l) => n + l.sets.filter(s => s.done).length, 0);
-      if (!done) { confirmDlg('No sets completed', 'Tick off at least one set before finishing, or discard this workout.', 'OK', false, () => {}); break; }
+      if (!done) { confirmDlg('No sets completed', 'Tick off at least one set before finishing, or cancel this workout.', 'OK', false, () => {}); break; }
       confirmDlg('Finish workout?', `Save ${done} completed ${done === 1 ? 'set' : 'sets'} to your history. Unticked sets are left out.`, 'Finish', false, finishWorkout); break; }
-    case 'discard': confirmDlg('Discard workout?', 'This workout and its sets will be deleted.', 'Discard', true, discardWorkout); break;
+    case 'discard': U.dialog = { title: 'Cancel this workout?', msg: 'Nothing from it will be saved. Your history stays as it is.', ok: 'Cancel Workout', no: 'Keep Training', danger: true, fn: discardWorkout }; renderDialog(); break;
     case 'toggle-set': {
       const l = a.logs[li], s = l.sets[si]; s.done = !s.done;
       if (s.done) {
