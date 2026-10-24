@@ -1,0 +1,14 @@
+{
+  "swift.path": "/usr/bin",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/DerivedData": true,
+    "**/*.xcuserstate": true
+  },
+  "[swift]": {
+    "editor.defaultFormatter": "sswg.swift-lang"
+  }
+}
